@@ -3,19 +3,41 @@ import { createBot, createProvider, createFlow, addKeyword, utils } from '@build
 import { MemoryDB as Database } from '@builderbot/bot'
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import ServerHttp from './http/server.js';
-
-import { sendMessageChatwood, searchUser, recoverConversation } from './services/chatwood.js'
+import { sendMessageChatwood, searchUser, recover } from './services/chatwood.js'
 
 console.log('ess ', process.env.PORT_WB)
 const PORT = process.env.PORT_WB ?? 1000
 
-const userRegistered = addKeyword('USER_REGISTERED')
-    .addAction(async (ctx, { flowDynamic, state }) => {
-        recoverConversation(ctx.from).then(response => {
-            console.log('converstation recovered...', response)
-        })
-        await flowDynamic('recovering conversation...')
+//creamos la conversacion(ya debe ser contacto), si el user no tiene ninguna conversacion abierta.
+const createConversation = addKeyword('CREATE_CONVERSATION')
+    .addAnswer(`What is your name?`, { capture: true }, async (ctx, { state }) => {
+        await state.update({ name: ctx.body })
     })
+
+//flujo que recupera 
+const userRegistered = addKeyword('USER_REGISTERED')
+    .addAnswer('Bienvenido de vuelta...')
+    .addAnswer('Por favor, proporciónenos los siguientes datos:')
+    .addAction({ capture: false }, async (ctx, { globalState, flowDynamic, state }) => {
+        console.log('Flow User Registered ')
+        const conversation_id = await recover(ctx.from);
+
+        console.log("id:::", conversation_id)
+
+
+        if (conversation_id > 0) {
+            await globalState.update({ conver_id: conversation_id });
+            const MSG = `conversation recovered id:${conversation_id}`
+            await flowDynamic(MSG)
+            sendMessageChatwood(MSG, 'incoming', conversation_id)
+
+            console.log('conversation recovered id:', conversation_id);
+
+        } else {
+            console.log('...');
+        }
+
+    });
 
 const userNotRegistered = addKeyword('USER_NOT_REGISTERED')
     .addAction(async (ctx, { flowDynamic, state }) => {
@@ -30,36 +52,23 @@ const userNotRegistered = addKeyword('USER_NOT_REGISTERED')
         await flowDynamic(MSG)
     })
 
-const discordFlow = addKeyword('doc').addAnswer(
-    ['You can see the documentation here', '📄 https://builderbot.app/docs \n', 'Do you want to continue? *yes*'].join(
-        '\n'
-    ),
-    { capture: true },
-    async (ctx, { gotoFlow, flowDynamic }) => {
-        if (ctx.body.toLocaleLowerCase().includes('yes')) {
-            return gotoFlow(registerFlow)
-        }
-        await flowDynamic('Thanks!')
-        return
-    }
-)
-
-const welcomeFlow = addKeyword(['hi', 'hello', 'hola'])
+//flow principal
+const welcomeFlow = addKeyword(['hi', 'hello', 'hola', 'inicio'])
     .addAnswer(`¡Hola! 👋 Bienvenido / a al Bot de la Fiscalia General Electoral. Por favor sigue las instrucciones`)
     .addAction(async (ctx, { flowDynamic, gotoFlow }) => {
-        searchUser(ctx.from)
-            .then(data => {
-                //console.log('searching...')
-                if (data) {
-                    //console.log(`Número de resultados: ${meta.count}`);
-                    return gotoFlow(userRegistered);
-                }
-                else {
-                    console.log('No se obtuvieron datos.');
-                    return gotoFlow(userNotRegistered);
-                }
-            });
-        //return gotoFlow(userNotRegistered);
+
+        const data_user = await searchUser(ctx.from)
+        console.log('wss ', data_user[1])
+
+        if (data_user[1] > 0) {
+            console.log('user found')
+            return gotoFlow(userRegistered);
+        }
+        else {
+            console.log('No se obtuvieron datos.');
+            return gotoFlow(userNotRegistered);
+        }
+
     })
 
 const registerFlow = addKeyword(utils.setEvent('REGISTER_FLOW'))
@@ -74,7 +83,7 @@ const registerFlow = addKeyword(utils.setEvent('REGISTER_FLOW'))
     })
 
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, registerFlow, userNotRegistered, userRegistered])
+    const adapterFlow = createFlow([welcomeFlow, registerFlow, userNotRegistered, userRegistered, createConversation])
     const adapterProvider = createProvider(Provider)
     const adapterDB = new Database()
 
