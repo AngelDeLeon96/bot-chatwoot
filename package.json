@@ -1,5 +1,5 @@
 {
-  "name": "base-bailey-json",
+  "name": "chatbot-fge",
   "version": "1.0.0",
   "description": "",
   "main": "src/app.js",
@@ -19,7 +19,8 @@
   "devDependencies": {
     "eslint": "^8.57.0",
     "eslint-plugin-builderbot": "latest",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "ts-migrate": "^0.1.35"
   },
   "author": "",
   "license": "ISC"

@@ -15,7 +15,7 @@ const chatWoodHook = async (req, res) => {
         return;
     }
 
-    console.log('body', phone, body.content);
+    console.log('sended to: ', phone, 'msg:', body.content);
     await providerWS.sendMessage(`${phone}`, body.content, {});
 
     res.send(body);
