@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { catch_error } from '../utils/utils.js'
 
 const SERVER = process.env.SERVER || "http://localhost:3000";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
@@ -12,11 +13,12 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
         const raw = JSON.stringify({
             inbox_id: INBOX_ID,
             contact_id: contact_id,
+            /*
             message: {
                 content: (msg instanceof Array) ? msg.join("\n") : msg,
                 type: type,
                 private: "true"
-            }
+            }*/
         });
 
         const requestOptions = {
@@ -29,8 +31,9 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
         const data = await dataRaw.json();
         return data;
     } catch (err) {
-        console.error(err);
-    } ``
+        catch_error(err)
+        return null
+    }
 }
 
 const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0) => {
@@ -55,15 +58,17 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
         const data = await dataRaw.json();
         return data;
     } catch (err) {
-        console.error(err);
+        catch_error(err)
+        return null
+        //console.error(err);
     }
 };
 
 const searchUser = async (user = "") => {
     try {
-        console.log(`searching: ${user}`)
+        console.log(`searching: ${user}`, ACCOUNT_ID)
         let count = null
-        let data_user = []
+        let data_user = {}
         const res = await axios.get(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/contacts/search?q=${user}`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -73,16 +78,22 @@ const searchUser = async (user = "") => {
         });
         const { meta, payload } = res.data
         count = meta.count
-        payload.forEach(element => {
-            //se agrega el id del usuario
-            data_user.push(element.id)
-        });
-        //se agrega el contador de conversaciones abiertas, minimo debe ser 1.
-        data_user.push(count)
+        //verificamos si hay datos
+        if (payload.length) {
+            payload.forEach(element => {
+                //se agrega el id del usuario
+                data_user.user_id = element.id
+                //data_user.push(element.id)
+            });
+        } else {
+            //no hay datos, no existe el user
+            data_user.user_id = 0
+        }
+        //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
+        data_user.count = count
         return data_user;
-
     } catch (err) {
-        console.error('err', err);
+        catch_error(err)
         return null;
     }
 };
@@ -114,15 +125,19 @@ const recoverConversation = async (id = 0) => {
         return conversation_id
 
     } catch (err) {
-        console.error('err', err);
+        catch_error(err)
+        //console.error('err', err);
         return null;
     }
 };
 
-const recover = async (user = "") => {
+const recover = async (user = {}) => {
     try {
-        return await recoverConversation(await searchUser(user))
+        let data_user = await searchUser(user)
+        //console.log(data_user.user_id)
+        return await recoverConversation(data_user.user_id)
     } catch (err) {
+        catch_error(err)
         console.error('err', err);
         return null;
     }
