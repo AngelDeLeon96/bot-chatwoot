@@ -3,7 +3,6 @@ import { addKeyword, EVENTS } from '@builderbot/bot'
 import { sendMessageChatwood, searchUser, recover, createConversationChatwood } from '../services/chatwood.js'
 import { reset, start, stop } from '../utils/idle-custom.js'
 import { numberClean } from '../utils/utils.js'
-import { main } from '../app.js'
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 //good bye
 const flowGoodBye = addKeyword(EVENTS.ACTION).addAnswer(["Hasta luego...", "Si desea hablar nuevamente con el bot, escriba hola."])
@@ -48,14 +47,8 @@ const freeFlow = addKeyword('si')
         await sendMessageChatwood(state.get('msgs'), 'outgoing', globalState.get('c_id'))
         console.log('Chat en modo libre')
 
-
-
     })
 
-
-agent.on('message', ({ body, from }) => {
-    console.log(`Message Payload:`, { body, from })
-})
 //flujo por si no se marca opcion
 const flowDefault = addKeyword(EVENTS.ACTION).addAnswer("We don't have that Option 🤔")
 
