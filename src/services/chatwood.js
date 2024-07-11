@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { catch_error } from '../utils/utils.js'
+import { readFile } from 'fs/promises'
 
 const SERVER = process.env.SERVER || "http://localhost:3000";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
@@ -26,9 +27,10 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
             headers: myHeaders,
             body: raw,
         };
-        console.log(raw);
+        //console.log(raw);
         const dataRaw = await fetch(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/conversations`, requestOptions);
         const data = await dataRaw.json();
+
         return data;
     } catch (err) {
         catch_error(err)
@@ -36,27 +38,31 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
     }
 }
 
-const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0) => {
+const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0, attachments = []) => {
     try {
-        const myHeaders = new Headers();
-        myHeaders.append("api_access_token", API);
-        myHeaders.append("Content-Type", "application/json");
-        const raw = JSON.stringify({
-            content: (msg instanceof Array) ? msg.join("\n") : msg,
-            message_type: message_type, // "incoming", 
-            private: true,
-            content_type: "input_email",
-            content_attributes: {}
-        });
-        const requestOptions = {
-            method: "POST",
-            headers: myHeaders,
-            body: raw,
-        };
-        console.log(raw);
-        const dataRaw = await fetch(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/conversations/${conversation_id}/messages`, requestOptions);
-        const data = await dataRaw.json();
-        return data;
+        console.log('....')
+        const url = `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/conversations/${conversation_id}/messages`
+        const form = new FormData();
+        form.set("content", msg);
+        form.set("message_type", message_type);
+        form.set("private", "true");
+
+        if (attachments.length) {
+            const fileName = `${attachments[0]}`.split('/').pop()
+            const blob = new Blob([await readFile(attachments[0])]);
+            form.set("attachments[]", blob, fileName);
+        }
+        const dataFetch = await fetch(url,
+            {
+                method: "POST",
+                headers: {
+                    api_access_token: API
+                },
+                body: form
+            }
+        );
+        const data = await dataFetch.json();
+        return data
     } catch (err) {
         catch_error(err)
         return null
@@ -66,7 +72,7 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
 const searchUser = async (user = "") => {
     try {
-        console.log(`searching: ${user}`, ACCOUNT_ID)
+        //console.log(`searching: ${user}`, ACCOUNT_ID)
         let count = null
         let data_user = {}
         const res = await axios.get(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/contacts/search?q=${user}`, {
