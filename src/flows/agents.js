@@ -1,52 +1,46 @@
 
 import { addKeyword, EVENTS } from '@builderbot/bot'
-import { sendMessageChatwood, searchUser, recover, createConversationChatwood } from '../services/chatwood.js'
-import { reset, start, stop } from '../utils/idle-custom.js'
+import { sendMessageChatwood } from '../services/chatwood.js'
+import { reactivarBot, reset, start, stop } from '../utils/timer.js'
 import { numberClean } from '../utils/utils.js'
-const ADMIN_NUMBER = process.env.ADMIN_NUMBER
+import controlBot from '../utils/control-bot.js'
+
 //good bye
 const flowGoodBye = addKeyword(EVENTS.ACTION).addAnswer(["Hasta luego...", "Si desea hablar nuevamente con el bot, escriba hola."])
 
-//talk
+
+//hablar con un agente
 const flowTalkAgent = addKeyword(EVENTS.ACTION)
-    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow,))
+    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer([`Desea comunicarse con un agente?`, 'Escriba sí o no.'], { capture: true, delay: 2800 }, async (ctx, { state, gotoFlow, globalState }) => {
         reset(ctx, gotoFlow);
-        await sendMessageChatwood([`Desea comunicarse con un agente?`, 'Escriba sí o no.'], 'incoming', globalState.get('c_id')); // Registrar la pregunta primero
+        await sendMessageChatwood([`Desea comunicarse con un agente?`, 'Escriba sí o no.'], 'incoming', globalState.get('c_id'));
         await state.update({ check: ctx.body });
-        await sendMessageChatwood(state.get('check'), 'outgoing', globalState.get('c_id'))
+    }).addAction(async (ctx, { state, gotoFlow, globalState, flowDynamic, blacklist }) => {
+        await sendMessageChatwood(`El usuario ${ctx.name} quiere contactar con un agente.`, 'outgoing', globalState.get('c_id'))
         const res = state.get('check').toLowerCase()
-
-        console.log(state.get('check'))
-
         if (res === 'sí' || res === 'si') {
-            console.log('flow talk...')
             return gotoFlow(freeFlow)
+
         }
         else {
-            stop(ctx);
             return gotoFlow(flowGoodBye);
         }
+
     })
 
 //flujo libre
-const freeFlow = addKeyword('si')
-    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow,))
-    .addAnswer('Estas conectado con un agente.', { capture: true }, async (ctx, { state, globalState, blacklist }) => {
+const freeFlow = addKeyword(EVENTS.ACTION)
+    .addAction(async (ctx, { gotoFlow }) => reactivarBot(ctx, gotoFlow,))
+    .addAnswer('Estas conectado con un agente.', { capture: false }, async (ctx, { state, globalState, blacklist, gotoFlow }) => {
+        reset(ctx, gotoFlow)
         await sendMessageChatwood('Estas conectado con un agente.', 'incoming', globalState.get('c_id'))
-        const phone = numberClean(ctx.from)
-        const check = blacklist.checkIf(phone)
+        const check = blacklist.checkIf(ctx.from.replace("+", ""))
         console.log('free flow checked', check)
         if (check) {
-            blacklist.add(phone)
+            blacklist.add(ctx.from.replace("+", ""))
             await sendMessageChatwood(`phone is banned`, 'incoming', globalState.get('c_id'))
-            console.log('0000')
         }
-        console.log('----', blacklist.checkIf(phone))
-        await state.update({ msgs: ctx.body });
-        await sendMessageChatwood(state.get('msgs'), 'outgoing', globalState.get('c_id'))
-        console.log('Chat en modo libre')
-
     })
 
 //flujo por si no se marca opcion
@@ -64,7 +58,7 @@ const flowMsgFinal = addKeyword(EVENTS.ACTION)
 //docs
 const mediaFlow = addKeyword(EVENTS.MEDIA)
     .addAnswer('Hemos recibido image/video', async (ctx, { provider, gotoFlow }) => {
-        const localPath = await provider.saveFile(ctx, { path: '...' })
+        const localPath = await provider.saveFile(ctx, { path: '../../public' })
         console.log(localPath)
         return gotoFlow(flowMsgFinal)
     })
