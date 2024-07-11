@@ -5,16 +5,16 @@ import controlBot from './control-bot.js';
 // Objeto para almacenar los temporizadores para cada usuario
 const timers = {};
 const TIMER = process.env.TIMER ?? 1000
+const TIMER_BOT = process.env.TIMER_BOT
 //flujo final por inactividad
 const flujoFinal = addKeyword(EVENTS.ACTION).addAnswer(['Gracias por contactarnos. Hemos procedido con la cancelación debido a inactividad.', 'Si desea iniciar el chatbot, por favor escribir: Hola o iniciar.'])
 
 //reactiva el bot despues de X tiempo
-const reactivarBot = (ctx, gotoFlow, ms = TIMER) => {
+const reactivarBot = (ctx, gotoFlow, blacklist, ms = TIMER_BOT) => {
     timers[ctx.from] = setTimeout(() => {
         console.log(`User timeout: ${ctx.from}`);
-
-        controlBot.status = true
-        //return gotoFlow(flujoFinal);
+        blacklist.remove(ctx.from.replace("+", ""))
+        return gotoFlow(flujoFinal);
     }, ms);
 }
 
