@@ -13,8 +13,11 @@
   "dependencies": {
     "@builderbot/bot": "1.1.7",
     "@builderbot/provider-baileys": "1.1.7",
+    "@whiskeysockets/baileys": "^6.7.5",
     "axios": "^1.7.2",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "mime-types": "^2.1.35",
+    "queue-promise": "^2.2.1"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
