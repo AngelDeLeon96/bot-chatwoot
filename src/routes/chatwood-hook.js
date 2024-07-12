@@ -21,6 +21,7 @@ const chatWoodHook = async (req, res) => {
             if (body?.event === 'message_created' && Object.hasOwn(mapperAttributes, 'id')) {
                 const idAssigned = mapperAttributes.id ?? null
                 console.log('idAssigned: ', idAssigned)
+
                 if (idAssigned) {
                     console.log(`${phone} blocked`)
                     bot.dynamicBlacklist.add(phone)
