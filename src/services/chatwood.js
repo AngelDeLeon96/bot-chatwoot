@@ -34,7 +34,7 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
         return data;
     } catch (err) {
         catch_error(err)
-        return null
+        //return null
     }
 }
 
@@ -48,9 +48,16 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
         form.set("private", "true");
 
         if (attachments.length) {
-            const fileName = `${attachments[0]}`.split('/').pop()
-            const blob = new Blob([await readFile(attachments[0])]);
-            form.set("attachments[]", blob, fileName);
+            const fileName = attachments[0].split('/').pop();
+            console.log('Archivo adjunto:', fileName);
+            try {
+                const fileContent = await readFile(attachments[0]);
+                const blob = new Blob([fileContent]);
+                form.set("attachments[]", blob, fileName);
+            } catch (readFileError) {
+                console.error('Error al leer el archivo adjunto:', readFileError);
+                throw readFileError;
+            }
         }
         const dataFetch = await fetch(url,
             {
@@ -61,12 +68,13 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
                 body: form
             }
         );
+        //console.log(dataFetch)
         const data = await dataFetch.json();
         return data
+
     } catch (err) {
         catch_error(err)
-        return null
-        //console.error(err);
+        console.error(err);
     }
 };
 
@@ -100,13 +108,14 @@ const searchUser = async (user = "") => {
         return data_user;
     } catch (err) {
         catch_error(err)
-        return null;
+        //return null;
     }
 };
 
 const recoverConversation = async (id = 0) => {
     try {
         let conversation_id = 0
+        console.log('contact id', id)
         const res = await axios.get(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/contacts/${id}/conversations`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -133,19 +142,19 @@ const recoverConversation = async (id = 0) => {
     } catch (err) {
         catch_error(err)
         //console.error('err', err);
-        return null;
+        //return null;
     }
 };
 
 const recover = async (user = {}) => {
     try {
         let data_user = await searchUser(user)
-        //console.log(data_user.user_id)
-        return await recoverConversation(data_user.user_id)
+        return data_user.user_id != 0 ? await recoverConversation(data_user.user_id) : 0
+
     } catch (err) {
         catch_error(err)
         console.error('err', err);
-        return null;
+        //return null;
     }
 };
 

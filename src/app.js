@@ -22,12 +22,12 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAnswer(`Cuál es su nombre?`, { capture: true, delay: 0 }, async (ctx, { state, gotoFlow, globalState }) => {
         try {
             reset(ctx, gotoFlow);
-            await sendMessageChatwood(`Cuál es su nombre?`, 'incoming', globalState.get('c_id')); // Registrar la pregunta primero
+            sendMessageChatwood(`Cuál es su nombre?`, 'incoming', globalState.get('c_id')); // Registrar la pregunta primero
             await state.update({ name: ctx.body });
             await sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('c_id')); // Luego registrar la respuesta
         }
-        catch {
-            return null
+        catch (err) {
+            console.error(err)
         }
     })
     .addAnswer(`Cuál es su consulta?`, { capture: true, delay: 2800 }, async (ctx, { state, gotoFlow, globalState }) => {
@@ -35,22 +35,29 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             reset(ctx, gotoFlow);
             await sendMessageChatwood(`Cuál es su consulta?`, 'incoming', globalState.get('c_id')); // Registrar la pregunta
             await state.update({ consulta: ctx.body });
-            await sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('c_id')); // Luego registrar la 
+
+            queue.enqueue(async () => {
+                sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('c_id')).catch((error) => {
+                    console.error(error)
+                })
+                return gotoFlow(flowMsgFinal)
+            })
         }
-        catch {
-            return null
+        catch (err) {
+            console.error(err)
         }
-    })
-    .addAction(async (ctx, { gotoFlow }) => {
-        stop(ctx)
-        return gotoFlow(flowMsgFinal)
     })
 
 //creamos la conversacion(ya debe ser contacto), si el user no tiene ninguna conversacion abierta.
 const createConversation = addKeyword(EVENTS.ACTION)
     .addAction({ delay: 500 }, async (ctx, { gotoFlow, globalState }) => {
-        await createConversationChatwood('', 'outgoing', globalState.get('contact_id'))
-        return gotoFlow(userRegistered)
+        try {
+            await createConversationChatwood('', 'outgoing', globalState.get('contact_id'))
+            return gotoFlow(userRegistered)
+        }
+        catch (err) {
+            console.error(err)
+        }
     })
 
 //flujo que recupera los datos del usuario registrado
@@ -58,7 +65,7 @@ const userRegistered = addKeyword(EVENTS.ACTION)
     .addAction({ delay: 500 }, async (ctx, { flowDynamic, gotoFlow, globalState }) => {
         try {
             await flowDynamic('Por favor, proporciónenos los siguientes datos:')
-            await sendMessageChatwood('Por favor, proporciónenos los siguientes datos:', 'incoming', globalState.get('c_id'))
+            sendMessageChatwood('Por favor, proporciónenos los siguientes datos:', 'incoming', globalState.get('c_id'))
             if (globalState.get('c_id') == 0) {
                 const conversation_id = await recover(ctx.from);
                 await globalState.update({ c_id: conversation_id })
@@ -166,11 +173,12 @@ const main = async () => {
     //bot desactivado
     adapterProvider.on('message', (payload) => {
         try {
+            console.log(payload)
             queue.enqueue(async () => {
                 const attachment = []
                 let caption, msg = ""
                 const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.mimetype;
-                //console.log(`Message Payload:`, JSON.stringify(payload))
+
                 if (payload?.body.includes('_event_') || mime) {
                     const extension = mimeType.extension(mime);
                     let mimeslice = mime.split("/")[0]
@@ -192,12 +200,16 @@ const main = async () => {
                 else {
                     msg = payload?.body
                 }
-
                 const c_id = await recover(payload.from)
-                console.log('data to send: ', c_id, attachment, msg)
-                await sendMessageChatwood(msg, 'incoming', c_id, attachment)
+                console.log('bot===', bot.dynamicBlacklist.remove(payload.from))
+
+                if (c_id != 0) {
+                    console.log('data to send: ', c_id, attachment, msg)
+                    //sendMessageChatwood(msg, 'incoming', c_id, attachment)
+                }
             })
         }
+
         catch (err) {
             console.log('ERROR', err)
         }
