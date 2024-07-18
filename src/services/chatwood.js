@@ -2,24 +2,24 @@ import axios from 'axios';
 import { catch_error } from '../utils/utils.js'
 import { readFile } from 'fs/promises'
 
-const SERVER = process.env.SERVER || "http://localhost:3000";
+const SERVER = process.env.SERVER_DOCKER || "http://localhost:3000";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
 const INBOX_ID = process.env.INBOX_ID ?? 5
 const API = process.env.API
+
+const builderURL = (path) => {
+    return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
+}
+
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
     try {
         const myHeaders = new Headers();
+        const url = builderURL('conversations')
         myHeaders.append("api_access_token", API);
         myHeaders.append("Content-Type", "application/json");
         const raw = JSON.stringify({
             inbox_id: INBOX_ID,
             contact_id: contact_id,
-            /*
-            message: {
-                content: (msg instanceof Array) ? msg.join("\n") : msg,
-                type: type,
-                private: "true"
-            }*/
         });
 
         const requestOptions = {
@@ -27,8 +27,8 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
             headers: myHeaders,
             body: raw,
         };
-        //console.log(raw);
-        const dataRaw = await fetch(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/conversations`, requestOptions);
+
+        const dataRaw = await fetch(url, requestOptions);
         const data = await dataRaw.json();
 
         return data;
@@ -41,7 +41,7 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0, attachments = []) => {
     try {
         console.log('....')
-        const url = `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/conversations/${conversation_id}/messages`
+        const url = builderURL(`conversations/${conversation_id}/messages`)
         const form = new FormData();
         form.set("content", msg);
         form.set("message_type", message_type);
@@ -80,10 +80,11 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
 const searchUser = async (user = "") => {
     try {
-        //console.log(`searching: ${user}`, ACCOUNT_ID)
+        console.log(`searching: ${user}`, ACCOUNT_ID)
+        const url = builderURL(`contacts/search?q=${user}`)
         let count = null
         let data_user = {}
-        const res = await axios.get(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/contacts/search?q=${user}`, {
+        const res = await axios.get(url, {
             headers: {
                 'Content-Type': 'application/json',
                 "api_access_token": API
@@ -108,15 +109,15 @@ const searchUser = async (user = "") => {
         return data_user;
     } catch (err) {
         catch_error(err)
-        //return null;
+
     }
 };
 
 const recoverConversation = async (id = 0) => {
     try {
         let conversation_id = 0
-        console.log('contact id', id)
-        const res = await axios.get(`${SERVER}/api/v1/accounts/${ACCOUNT_ID}/contacts/${id}/conversations`, {
+        const url = builderURL(`contacts/${id}/conversations`)
+        const res = await axios.get(url, {
             headers: {
                 'Content-Type': 'application/json',
                 "api_access_token": API
@@ -142,19 +143,32 @@ const recoverConversation = async (id = 0) => {
     } catch (err) {
         catch_error(err)
         //console.error('err', err);
-        //return null;
+
     }
 };
 
 const recover = async (user = {}) => {
     try {
-        let data_user = await searchUser(user)
-        return data_user.user_id != 0 ? await recoverConversation(data_user.user_id) : 0
+        const user_info = {}
+        console.log('recovering for: ', user, await fetch('http://localhost:3000'))
+        const data_user = await searchUser(user)
+        console.log('--', data_user)
+        if (data_user.user_id > 0) {
+            user_info.user_id = data_user.user_id
+            const conversation_id = await recoverConversation(data_user.user_id)
+            user_info.conversation_id = conversation_id
+        }
+        else {
+            console.log('No se encontro el usuario:', user)
+            user_info.user_id = 0
+            user_info.conversation_id = 0
+        }
+        //console.log(user_info)
+        return user_info
 
     } catch (err) {
         catch_error(err)
         console.error('err', err);
-        //return null;
     }
 };
 
