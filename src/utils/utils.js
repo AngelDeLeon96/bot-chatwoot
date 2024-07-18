@@ -14,7 +14,7 @@ const catch_error = (error) => {
         console.log('No se recibió respuesta del servidor.');
     } else {
         // Algo pasó al configurar la solicitud que lanzó un error
-        console.log('Error en la configuración de la solicitud:', error.message);
+        console.log('Error en la configuración de la solicitud:', error);
     }
 
 }
