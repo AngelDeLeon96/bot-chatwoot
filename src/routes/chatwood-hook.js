@@ -10,7 +10,17 @@ const chatWoodHook = async (req, res) => {
         const mapperAttributes = body?.conversation?.meta?.assignee
         const attachments = body?.attachments
         const phone = body.conversation?.meta?.sender?.phone_number.replace('+', '')
-        //console.log('msg sended to:', phone)
+        const content = body.content
+
+        if (content && (content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "") === 'hasta luego' || content.toLowerCase().replace(/[\u0300-\u036f]/g, "") === 'adios')) {
+            console.log(`Bot reactivado para el usuario ${phone}`)
+
+            if (bot.dynamicBlacklist.checkIf(phone)) {
+                bot.dynamicBlacklist.remove(phone)
+                console.log(bot.dynamicBlacklist.checkIf(phone))
+            }
+            return;
+        }
         /*La parte que se encarga de determinar si un mensaje es enviado al whatsapp del cliente*/
         const checkIfMessage = body?.private == false && body?.event == "message_created" && body?.message_type === "outgoing" && body?.conversation?.channel.includes("Channel::Api")
 
@@ -25,14 +35,12 @@ const chatWoodHook = async (req, res) => {
                 if (idAssigned) {
                     console.log(`${phone} blocked`)
                     bot.dynamicBlacklist.add(phone)
-                } else {
-                    console.log(`${phone} unblocked`)
-                    bot.dynamicBlacklist.remove(phone)
                 }
             }
             //envia los docs al whatsapp
             if (file) {
-                const fileURL = file.data_url.replace("http://0.0.0.0:3000/", process.env.PROXY)
+                console.log(file.data_url)
+                const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
                 console.log(fileURL)
                 await providerWS.sendMedia(`${phone}@c.us`, fileURL, content)
                 res.send('ok')
