@@ -2,13 +2,14 @@ import axios from 'axios';
 import { catch_error } from '../utils/utils.js'
 import { readFile } from 'fs/promises'
 
-const SERVER = process.env.SERVER_DOCKER || "http://localhost:3000";
+const SERVER = process.env.SERVER_DOCKER || "http://localhost";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
 const INBOX_ID = process.env.INBOX_ID ?? 5
 const API = process.env.API
+const PORT = process.env.PORT
 
 const builderURL = (path) => {
-    return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
+    return `${SERVER}:${PORT}/api/v1/accounts/${ACCOUNT_ID}/${path}`
 }
 
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
@@ -150,7 +151,7 @@ const recoverConversation = async (id = 0) => {
 const recover = async (user = {}) => {
     try {
         const user_info = {}
-        console.log('recovering for: ', user, await fetch('http://localhost:3000'))
+        //console.log('recovering for: ', user, await fetch('http://localhost:3000'))
         const data_user = await searchUser(user)
         console.log('--', data_user)
         if (data_user.user_id > 0) {

@@ -3,7 +3,7 @@ import routes from '../routes/chatwood-hook.js';
 
 class ServerHttp {
     app;
-    port = process.env.PORT_WEB ?? 3030;
+    port = process.env.PORT_BOT ?? 3030;
     providerWS;
 
     constructor(_providerWS, _bot) {
