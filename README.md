@@ -3,7 +3,7 @@
     <picture>
       <img src="https://builderbot.vercel.app/assets/thumbnail-vector.png" height="80">
     </picture>
-    <h2 align="center">BuilderBot</h2>
+    <h2 align="center">BotPlus</h2>
   </a>
 </p>
 
@@ -20,8 +20,7 @@
 
 
 ## Getting Started
-
-With this library, you can build automated conversation flows agnostic to the WhatsApp provider, set up automated responses for frequently asked questions, receive and respond to messages automatically, and track interactions with customers. Additionally, you can easily set up triggers to expand functionalities limitlessly.
+Bot creado utilizando BuilderBot, con el complemento de un CRM opensource como Chatwoot
 
 ```
 npm create builderbot@latest
@@ -32,13 +31,5 @@ npm create builderbot@latest
 
 Visit [builderbot](https://builderbot.vercel.app/) to view the full documentation.
 
-
-## Official Course
-
-If you want to discover all the functions and features offered by the library you can take the course.
-[View Course](https://app.codigoencasa.com/courses/builderbot?refCode=LEIFER)
-
-
 ## Contact Us
-- [💻 Discord](https://link.codigoencasa.com/DISCORD)
-- [👌 𝕏 (Twitter)](https://twitter.com/leifermendez)
+- Angel De Leon
