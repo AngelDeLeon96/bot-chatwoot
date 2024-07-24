@@ -1,4 +1,6 @@
-import { addKeyword } from '@builderbot/bot'
+import { addKeyword } from '@builderbot/bot';
+import fs from 'fs'
+
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 
 const catch_error = (error) => {
@@ -40,5 +42,24 @@ const blackListFlow = addKeyword('mute')
         }
     })
 
+const verificarOCrearCarpeta = (ruta) => {
+    return new Promise((resolve, reject) => {
+        fs.access(ruta, fs.constants.F_OK, (err) => {
+            if (err) {
+                // La carpeta no existe, crearla
+                fs.mkdir(ruta, { recursive: true }, (err) => {
+                    if (err) {
+                        reject('Error al crear la carpeta: ' + err);
+                    } else {
+                        resolve('Carpeta creada correctamente.');
+                    }
+                });
+            } else {
+                // La carpeta existe
+                resolve('La carpeta ya existe.');
+            }
+        });
+    });
+}
 
-export { catch_error, numberClean, blackListFlow };
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta };

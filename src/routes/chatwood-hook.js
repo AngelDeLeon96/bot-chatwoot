@@ -4,6 +4,7 @@ const router = express.Router();
 // Enviar mensaje a usuario de WhatsApp
 const chatWoodHook = async (req, res) => {
     try {
+        //console.log('hook...')
         const bot = req.bot
         const providerWS = req.providerWS;
         const body = req.body;
@@ -60,6 +61,13 @@ const chatWoodHook = async (req, res) => {
 
 };
 
-router.post('/chatwood-hook', chatWoodHook);
+const test3 = async () => {
+    console.log('tesing')
+    return "hola"
+}
 
+router.post('/chatwood-hook', chatWoodHook);
+router.get('/wood', test3)
+
+//console.log(JSON.stringify(router))
 export default router;

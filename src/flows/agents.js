@@ -71,18 +71,18 @@ const flowMsgFinal = addKeyword(EVENTS.ACTION)
 
 //docs
 const mediaFlow = addKeyword(EVENTS.MEDIA)
-    .addAnswer('Hemos recibido image/video', async (ctx, { provider, gotoFlow }) => {
+    .addAnswer('Hemos recibido image/video', async (ctx, { provider, gotoFlow, endFlow }) => {
         const localPath = await provider.saveFile(ctx, { path: '../../public/docs' })
         console.log(localPath)
-        return gotoFlow(flowMsgFinal)
+        return endFlow()
     })
 
 //documents
 const documentFlow = addKeyword(EVENTS.DOCUMENT)
-    .addAnswer("Hemos recibido el documento que no ha adjuntado.", async (ctx, { provider, gotoFlow }) => {
+    .addAnswer("Hemos recibido el documento que no ha adjuntado.", async (ctx, { provider, gotoFlow, endFlow }) => {
         const localPath = await provider.saveFile(ctx, { path: '../../public/docs' })
         console.log(localPath)
-        return gotoFlow(flowMsgFinal)
+        return endFlow()
     })
 
 export { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow };

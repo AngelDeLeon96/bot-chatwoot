@@ -8,6 +8,7 @@ const INBOX_ID = process.env.INBOX_ID ?? 5
 const API = process.env.API
 const PORT = process.env.PORT
 
+console.log('server: ', SERVER, PORT)
 const builderURL = (path) => {
     return `${SERVER}:${PORT}/api/v1/accounts/${ACCOUNT_ID}/${path}`
 }
@@ -41,16 +42,15 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
 const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0, attachments = []) => {
     try {
-        console.log('....')
         const url = builderURL(`conversations/${conversation_id}/messages`)
-        const form = new FormData();
+        const form = new FormData()
         form.set("content", msg);
         form.set("message_type", message_type);
         form.set("private", "true");
 
         if (attachments.length) {
             const fileName = attachments[0].split('/').pop();
-            console.log('Archivo adjunto:', fileName);
+            //console.log('Archivo adjunto:', fileName);
             try {
                 const fileContent = await readFile(attachments[0]);
                 const blob = new Blob([fileContent]);
@@ -83,6 +83,7 @@ const searchUser = async (user = "") => {
     try {
         console.log(`searching: ${user}`, ACCOUNT_ID)
         const url = builderURL(`contacts/search?q=${user}`)
+        //console.log(url)
         let count = null
         let data_user = {}
         const res = await axios.get(url, {
@@ -109,7 +110,8 @@ const searchUser = async (user = "") => {
         data_user.count = count
         return data_user;
     } catch (err) {
-        catch_error(err)
+        //catch_error(err)
+        console.error(err)
 
     }
 };
@@ -151,9 +153,7 @@ const recoverConversation = async (id = 0) => {
 const recover = async (user = {}) => {
     try {
         const user_info = {}
-        //console.log('recovering for: ', user, await fetch('http://localhost:3000'))
         const data_user = await searchUser(user)
-        console.log('--', data_user)
         if (data_user.user_id > 0) {
             user_info.user_id = data_user.user_id
             const conversation_id = await recoverConversation(data_user.user_id)
@@ -164,7 +164,7 @@ const recover = async (user = {}) => {
             user_info.user_id = 0
             user_info.conversation_id = 0
         }
-        //console.log(user_info)
+        //console.log(user_info)cleacdc
         return user_info
 
     } catch (err) {
@@ -173,5 +173,25 @@ const recover = async (user = {}) => {
     }
 };
 
+const checking = async (user = "") => {
+    try {
+        console.log(`searching: ${user}`, ACCOUNT_ID, SERVER, API, INBOX_ID)
+        //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+        const res = await axios.get('http://127.0.0.1:3000/api/v1/accounts/1/contacts/search?q=+50766962147', {
+            headers: {
+                'Content-Type': 'application/json',
+                "api_access_token": API
+                // Añade otros encabezados si es necesario
+            },
+            //httpsAgent: new axios.http.Agent({ rejectUnauthorized: false })
+        });
+        console.log('fecht url', res.data)
+        //const { meta, payload } = res.data
+        return res.data;
+    }
+    catch (err) {
+        console.error(err)
+    }
+}
 
-export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover };
+export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover, checking };
