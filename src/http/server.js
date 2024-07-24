@@ -3,11 +3,12 @@ import routes from '../routes/chatwood-hook.js';
 
 class ServerHttp {
     app;
-    port = 3030
+    port = process.env.PORT_BOT ?? 3030;
     providerWS;
 
-    constructor(_providerWS) {
+    constructor(_providerWS, _bot) {
         this.providerWS = _providerWS;
+        this.bot = _bot
     }
 
     buildApp = () => {
@@ -15,6 +16,7 @@ class ServerHttp {
             .use(express.json())
             .use((req, _, next) => {
                 req.providerWS = this.providerWS;
+                req.bot = this.bot
                 next();
             })
             .use(routes)
