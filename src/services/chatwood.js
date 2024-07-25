@@ -10,7 +10,7 @@ const PORT = process.env.PORT
 
 console.log('server: ', SERVER, PORT)
 const builderURL = (path) => {
-    return `${SERVER}:${PORT}/api/v1/accounts/${ACCOUNT_ID}/${path}`
+    return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
 }
 
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
@@ -81,7 +81,6 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
 const searchUser = async (user = "") => {
     try {
-        console.log(`searching: ${user}`, ACCOUNT_ID)
         const url = builderURL(`contacts/search?q=${user}`)
         //console.log(url)
         let count = null
