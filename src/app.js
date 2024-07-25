@@ -5,36 +5,41 @@ import { MemoryDB as Database } from '@builderbot/bot'
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import ServerHttp from './http/server.js';
-import { sendMessageChatwood, searchUser, recover, createConversationChatwood } from './services/chatwood.js'
+import { sendMessageChatwood, recover, createConversationChatwood } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop } from './utils/timer.js'
 import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow } from './flows/agents.js'
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
 import mimeType from 'mime-types'
-import { catch_error } from './utils/utils.js';
+import { catch_error, verificarOCrearCarpeta, esHorarioLaboral } from './utils/utils.js';
+import { showMSG, i18n } from './i18n/i18n.js';
 const queue = new Queue({
     concurrent: 1,
     interval: 500
 })
+i18n.init()
 
 //registramos un MSG en una conversacion
 const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`Cuál es su nombre?`, { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
+    .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
         try {
             reset(ctx, gotoFlow);
-            sendMessageChatwood(`Cuál es su nombre?`, 'incoming', globalState.get('conversation_id')); // Registrar la pregunta primero
+            await sendMessageChatwood(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id')); // Registrar la pregunta primero
             await state.update({ name: ctx.body });
-            await sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id')); // Luego registrar la respuesta
+            queue.enqueue(async () => {
+                sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id')); // Luego registrar la respuesta
+            })
+
         }
         catch (err) {
             console.error(err)
         }
     })
-    .addAnswer(`Cuál es su consulta?`, { capture: true, delay: 1500 }, async (ctx, { state, gotoFlow, globalState }) => {
+    .addAnswer(showMSG('solicitar_consulta'), { capture: true, delay: 1900 }, async (ctx, { state, gotoFlow, globalState }) => {
         try {
             reset(ctx, gotoFlow);
-            await sendMessageChatwood(`Cuál es su consulta?`, 'incoming', globalState.get('conversation_id')); // Registrar la pregunta
+            await sendMessageChatwood(showMSG('solicitar_consulta'), 'incoming', globalState.get('conversation_id')); // Registrar la pregunta
             await state.update({ consulta: ctx.body });
             queue.enqueue(async () => {
                 sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('conversation_id'))
@@ -63,11 +68,12 @@ const createConversation = addKeyword(EVENTS.ACTION)
 const userRegistered = addKeyword(EVENTS.ACTION)
     .addAction({ delay: 500 }, async (ctx, { flowDynamic, gotoFlow, globalState }) => {
         try {
-            console.log(`flow user registered`)
-            await flowDynamic('Por favor, proporciónenos los siguientes datos:')
-            sendMessageChatwood('Por favor, proporciónenos los siguientes datos:', 'incoming', globalState.get('conversation_id'))
+            //console.log(`flow user registered`)
+            const MSG0 = showMSG('solicitar_datos')
+            await flowDynamic(MSG0)
+            sendMessageChatwood(MSG0, 'incoming', globalState.get('conversation_id'))
             //const conversation_id = globalState.get('conversation_id')
-            console.log('registering msg...')
+            //console.log('registering msg...')
             return gotoFlow(registerMsgConversation)
             // si existe una conversacion abierta, se registran los mensajes
         }
@@ -84,8 +90,8 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
             const numero = ctx.from
             var FORMULARIO = process.env.FORM_URL
             var MSG = [
-                `Por favor, rellene el siguiente formulario: ${FORMULARIO}.`,
-                `Un agente se comunicará con usted a este número: ${numero}.`
+                `${showMSG('llenar_form')}: ${FORMULARIO}.`,
+                `${showMSG('agente_comunicara')}: ${numero}.`
             ]
             await flowDynamic(MSG)
             return endFlow()
@@ -98,14 +104,20 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
 
 //flow principal
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
-    .addAnswer(`¡Hola! 👋 Bienvenido / a al Bot de la Fiscalia General Electoral. Por favor sigue las instrucciones.`, { capture: false }, async (ctx, { globalState, gotoFlow, endFlow }) => {
+    .addAction(async (_, { endFlow }) => {
+        const now = new Date();
+        if (!esHorarioLaboral(now)) {
+            return endFlow(showMSG('fuera_laboral'))
+        }
+    })
+    .addAnswer(showMSG('bienvenida'), { capture: false }, async (ctx, { globalState, gotoFlow, endFlow }) => {
         try {
-            const MNSF = `¡Hola! 👋 Bienvenido / a al Bot de la Fiscalia General Electoral. Por favor sigue las instrucciones.`
+            const MNSF = showMSG('bienvenida')
             const user_data = await recover(ctx.from);
             //set las variables con los datos del usuario como su: id y id de conversation
             await globalState.update({ conversation_id: user_data.conversation_id })
             await globalState.update({ contact_id: user_data.user_id })
-            console.log('data user', globalState.get('contact_id'), typeof (globalState.get('conversation_id')))
+            //console.log('data user', globalState.get('contact_id'), typeof (globalState.get('conversation_id')))
             /*  puede ser contact id= 1, conversation id= 1 .
                 contact id= 0, conversation id= 0
                 contact id= 1, conversation id= 0
@@ -128,7 +140,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
                 const msg3 = sendMessageChatwood(MNSF, 'incoming', user_data.contact_id)
                 return gotoFlow(userRegistered);
             } else {
-                return endFlow('Se produjo un error, intente nuevamente.')
+                return endFlow(showMSG('error_generico'))
             }
 
         }
@@ -171,7 +183,7 @@ const main = async () => {
                     const attachment = []
                     let caption, msg = ""
                     const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.mimetype;
-                    console.log(JSON.stringify(payload))
+                    //console.log(JSON.stringify(payload))
 
                     if (payload?.body.includes('_event_') || mime) {
                         const extension = mimeType.extension(mime);
@@ -185,6 +197,8 @@ const main = async () => {
                         }
                         const buffer = await downloadMediaMessage(payload, "buffer");
                         const fileName = `file-${Date.now()}.${extension}`
+                        verificarOCrearCarpeta(`${process.cwd()}/public/docs`)
+
                         const pathFile = `${process.cwd()}/public/docs/${fileName}`
                         //msg = payload?.
                         await fs.writeFile(pathFile, buffer);
@@ -194,11 +208,11 @@ const main = async () => {
                     else {
                         msg = payload?.body
                     }
-                    console.log(msg)
+                    //console.log(msg)
                     const daata = await recover(payload.from)
                     const conversation_id = daata.conversation_id
                     if (conversation_id != 0) {
-                        console.log('data to send: ', conversation_id, attachment, msg)
+                        //console.log('data to send: ', conversation_id, attachment, msg)
                         const msg2 = sendMessageChatwood(msg, 'incoming', conversation_id, attachment)
                     }
                 })
