@@ -1,0 +1,20 @@
+{
+	"reinicar_bot": "Si desea volverse a comunicar, escriba: hola.",
+	"desea_comunicarse": "Desea comunicarse con un agente?",
+	"connected": "Estas conectado con un agente.",
+	"solicitar_nombre": "Cuál es su nombre?",
+	"solicitar_consulta": "Cuál es su consulta?",
+	"bienvenida": "¡Hola! 👋 Bienvenido / a al Bot de la Fiscalia General Electoral. Por favor sigue las instrucciones.",
+	"solicitar_datos": "Por favor, proporciónenos los siguientes datos:",
+	"gracias": "Gracias por contactarnos.",
+	"opciones":"Escriba 1 para ✅sí o 2 para ⭕️no.",
+	"reinicio_bot":"Si desea hablar nuevamente con el bot, escriba hola.",
+	"finished":"⏰Comunicación terminada con el usuario.",
+	"bot_deactivated":"Bot desactivado🛑, el usuario puede hablar libremente.",
+	"agente_comunicara":"Un agente se estará comunicando con usted a este número:",
+	"llenar_form":"Por favor, rellene el siguiente formulario:",
+	"error_generico":"Se produjo un error, intente nuevamente."
+
+
+
+}
