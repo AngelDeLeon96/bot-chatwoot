@@ -6,8 +6,8 @@ import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import ServerHttp from './http/server.js';
 import { sendMessageChatwood, recover, createConversationChatwood } from './services/chatwood.js'
-import { flujoFinal, reset, start, stop } from './utils/timer.js'
-import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow } from './flows/agents.js'
+import { flujoFinal, reset, start, stop, resumeBot, pauseBot } from './utils/timer.js'
+import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow } from './flows/agents.js'
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
 import mimeType from 'mime-types'
@@ -22,35 +22,40 @@ i18n.init()
 //registramos un MSG en una conversacion
 const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
-        try {
-            reset(ctx, gotoFlow);
-            await sendMessageChatwood(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id')); // Registrar la pregunta primero
-            await state.update({ name: ctx.body });
-            queue.enqueue(async () => {
-                sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id')); // Luego registrar la respuesta
-            })
-
+    .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { state, gotoFlow, globalState, fallBack, flowDynamic }) => {
+        reset(ctx, gotoFlow);
+        await sendMessageChatwood(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id'));
+        await state.update({ name: ctx.body });
+        const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
+        const checkedText = regex.test(ctx.body);
+        if (checkedText) {
+            //await flowDynamic(showMSG('solicitar_nombre'));
+            return fallBack();
         }
-        catch (err) {
-            console.error(err)
+        else {
+            queue.enqueue(async () => {
+                await sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id'));
+            });
         }
     })
-    .addAnswer(showMSG('solicitar_consulta'), { capture: true, delay: 1900 }, async (ctx, { state, gotoFlow, globalState }) => {
-        try {
-            reset(ctx, gotoFlow);
-            await sendMessageChatwood(showMSG('solicitar_consulta'), 'incoming', globalState.get('conversation_id')); // Registrar la pregunta
-            await state.update({ consulta: ctx.body });
+    .addAnswer(showMSG('solicitar_consulta'), { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, globalState, fallBack, flowDynamic }) => {
+        reset(ctx, gotoFlow);
+        await sendMessageChatwood(showMSG('solicitar_consulta'), 'incoming', globalState.get('conversation_id')); // Registrar
+        await state.update({ consulta: ctx.body });
+        const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
+        const checkedText2 = regex.test(ctx.body);
+        if (checkedText2) {
+            //await flowDynamic(showMSG('solicitar_consulta'));
+            return fallBack();
+        }
+        else {
             queue.enqueue(async () => {
-                sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('conversation_id'))
-            })
-            console.log(`==>`)
-            return gotoFlow(flowMsgFinal)
+                sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('conversation_id'));
+            });
+            console.log(`==>`);
+            return gotoFlow(flowMsgFinal);
         }
-        catch (err) {
-            console.error(err)
-        }
-    })
+    });
 
 //creamos la conversacion(ya debe ser contacto), si el user no tiene ninguna conversacion abierta.
 const createConversation = addKeyword(EVENTS.ACTION)
@@ -62,7 +67,7 @@ const createConversation = addKeyword(EVENTS.ACTION)
         catch (err) {
             console.error(err)
         }
-    })
+    });
 
 //flujo que recupera los datos del usuario registrado
 const userRegistered = addKeyword(EVENTS.ACTION)
@@ -80,7 +85,7 @@ const userRegistered = addKeyword(EVENTS.ACTION)
         catch (err) {
             catch_error(err)
         }
-    })
+    });
 
 //flujo si el usuario no esta registrado como contacto
 const userNotRegistered = addKeyword(EVENTS.ACTION)
@@ -100,14 +105,19 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
             catch_error(err)
             return endFlow()
         }
-    })
+    });
 
 //flow principal
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
-    .addAction(async (_, { endFlow }) => {
+    .addAction(async (ctx, { endFlow, blacklist }) => {
+        console.log('<======>')
         const now = new Date();
         if (!esHorarioLaboral(now)) {
             return endFlow(showMSG('fuera_laboral'))
+        }
+        if (blacklist.checkIf(ctx.from.replace('+', ''))) {
+            console.log('user blocked')
+            return endFlow()
         }
     })
     .addAnswer(showMSG('bienvenida'), { capture: false }, async (ctx, { globalState, gotoFlow, endFlow }) => {
@@ -117,7 +127,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
             //set las variables con los datos del usuario como su: id y id de conversation
             await globalState.update({ conversation_id: user_data.conversation_id })
             await globalState.update({ contact_id: user_data.user_id })
-            //console.log('data user', globalState.get('contact_id'), typeof (globalState.get('conversation_id')))
+            console.log('data user', globalState.get('contact_id'), typeof (globalState.get('conversation_id')))
             /*  puede ser contact id= 1, conversation id= 1 .
                 contact id= 0, conversation id= 0
                 contact id= 1, conversation id= 0
@@ -153,7 +163,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, createConversation, registerMsgConversation, flowDefault, flujoFinal, flowTalkAgent, mediaFlow, documentFlow, freeFlow, flowGoodBye, flowMsgFinal])
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, createConversation, registerMsgConversation, flowDefault, flujoFinal, flowTalkAgent, mediaFlow, documentFlow, freeFlow, flowGoodBye, flowMsgFinal, voiceNoteFlow])
     const adapterProvider = createProvider(Provider)
     const adapterDB = new Database()
 
@@ -177,22 +187,22 @@ const main = async () => {
 
     adapterProvider.on('message', (payload) => {
         try {
-            //verificamos si el usuario esta con el bot desactivado
+            //verificamos si el usuario esta con el bot desactivado, es decir el modo libre esta activado
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
                 queue.enqueue(async () => {
+                    const last_activity = {}
+                    //console.log('resume bot...', pauseBot(payload))
                     const attachment = []
                     let caption, msg = ""
-                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.mimetype;
-                    //console.log(JSON.stringify(payload))
-
+                    const mime = payload?.message?.imageMessage?.mimetype ?? payload?.message?.videoMessage?.mimetype ?? payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.mimetype ?? payload?.message?.audioMessage?.mimetype;
+                    console.log('mensaje capturado con el provider: ')
                     if (payload?.body.includes('_event_') || mime) {
                         const extension = mimeType.extension(mime);
                         let mimeslice = mime.split("/")[0]
                         console.log(mimeslice)
                         if (mimeslice === 'image') {
                             caption = payload?.message?.imageMessage?.caption
-                        }
-                        else {
+                        } else {
                             caption = payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.caption
                         }
                         const buffer = await downloadMediaMessage(payload, "buffer");
@@ -223,6 +233,7 @@ const main = async () => {
             //console.error('ERROR', err)
         }
     })
+
 
 }
 
