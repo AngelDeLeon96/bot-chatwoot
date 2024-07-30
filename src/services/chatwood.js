@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { catch_error } from '../utils/utils.js'
 import { readFile } from 'fs/promises'
+import { showMSG } from '../i18n/i18n.js';
 
 const SERVER = process.env.SERVER_DOCKER || "http://localhost";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
@@ -44,6 +45,7 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
     try {
         const url = builderURL(`conversations/${conversation_id}/messages`)
         const form = new FormData()
+        //let msg2 = !msg.includes('_event_voice_note') ? msg : showMSG('no_permitida')
         form.set("content", msg);
         form.set("message_type", message_type);
         form.set("private", "true");
