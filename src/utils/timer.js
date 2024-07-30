@@ -1,23 +1,33 @@
 import { addKeyword, EVENTS } from '@builderbot/bot'
+import { showMSG } from '../i18n/i18n.js';
 
 
 // Objeto para almacenar los temporizadores para cada usuario
 const timers = {};
-const TIMER = process.env.TIMER ?? 1000
-const TIMER_BOT = process.env.TIMER_BOT ?? 10000
+const remainingTimes = {};
+const TIMER = process.env.TIMER ?? 100000
+const TIMER_BOT = process.env.TIMER_BOT ?? 100000
+
 //flujo final por inactividad
 const flujoFinal = addKeyword(EVENTS.ACTION)
-    .addAnswer(['📌Gracias por contactarnos.', 'Hemos procedido con la cancelación debido a inactividad.', 'Si desea iniciar el chatbot, por favor escribir: Hola o iniciar.'], async (_, { endFlow }) => {
+    .addAnswer([showMSG('gracias'), showMSG('inactividad'), showMSG('reiniciar_bot')], async (_, { endFlow }) => {
         return endFlow();
     })
 
-const flujoBot = addKeyword(EVENTS.ACTION)
-    .addAnswer(['📌Gracias por contactarnos.', 'El bot a sido reactivado nuevamente.', 'Si desea hablar con un agente, por favor escribir: Hola o iniciar.'], async (_, { endFlow }) => {
-        return endFlow();
-    }
-    )
 
 //reactiva el bot despues de X tiempo
+// Función para iniciar el temporizador de inactividad para un usuario
+const startBot = (ctx, gotoFlow, ms = TIMER) => {
+    timers[ctx.from] = setTimeout(() => {
+        console.log(`User timeout: ${ctx.from}`);
+        return gotoFlow(flujoFinal);
+    }, ms);
+    //guardamos el tiempo actual del usuario
+    remainingTimes[ctx.from] = ms;
+    console.log(`remaining time ${remainingTimes[ctx.from]} from ${ctx.from}`)
+
+}
+//reactiva el bot para el usuario, se acabo el tiempo
 const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     timers[ctx.from] = setTimeout(() => {
         let number = ctx.from.replace("+", "")
@@ -25,10 +35,38 @@ const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
         if (blacklist.checkIf(number)) {
             blacklist.remove(number)
         }
-        return endFlow('⏰bot reactivado.');
+        return endFlow(showMSG('bot_reactivated'));
     }, ms);
 }
 
+// Reactivar el temporizador de inactividad para un usuario
+const resumeBot = (ctx, gotoFlow) => {
+    if (remainingTimes[ctx.from]) {
+        timers[ctx.from] = setTimeout(() => {
+            console.log(`User timeout: ${ctx.from}`);
+            gotoFlow(flujoFinal);
+        }, remainingTimes[ctx.from]);
+
+        console.log(`User resumed: ${ctx.from}, remaining time: ${remainingTimes[ctx.from]}`);
+    }
+}
+
+// Pausar el temporizador de inactividad para un usuario
+const pauseBot = (ctx) => {
+    console.log(ctx)
+    if (timers[ctx.from]) {
+        // Calcula el tiempo restante
+        const elapsedTime = TIMER - (remainingTimes[ctx.from] - Date.now());
+        remainingTimes[ctx.from] = elapsedTime;
+
+        // Borra el temporizador actual
+        clearTimeout(timers[ctx.from]);
+        timers[ctx.from] = null;
+
+        console.log(`User paused: ${ctx.from}, remaining time: ${elapsedTime}`);
+        return elapsedTime
+    }
+}
 // Flujo para manejar la inactividad
 const idleFlow = addKeyword(EVENTS.ACTION).addAction(
     async (_, { endFlow }) => {
@@ -72,7 +110,10 @@ export {
     start,
     reset,
     stop,
+    flujoFinal,
     stopBot,
     reactivarBot,
-    flujoFinal,
+    startBot,
+    resumeBot,
+    pauseBot
 }
