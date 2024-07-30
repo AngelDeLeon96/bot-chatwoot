@@ -1,8 +1,14 @@
 
-import { addKeyword, EVENTS } from '@builderbot/bot'
-import { sendMessageChatwood } from '../services/chatwood.js'
-import { reactivarBot, reset, start, stop } from '../utils/timer.js'
-import { showMSG } from '../i18n/i18n.js'
+import { addKeyword, EVENTS } from '@builderbot/bot';
+import { sendMessageChatwood } from '../services/chatwood.js';
+import { reactivarBot, reset, start, stop } from '../utils/timer.js';
+import { showMSG } from '../i18n/i18n.js';
+import Queue from 'queue-promise';
+const queue = new Queue({
+    concurrent: 1,
+    interval: 500
+});
+
 //good bye
 const flowGoodBye = addKeyword(EVENTS.ACTION)
     .addAnswer([showMSG('gracias'), showMSG('reiniciar_bot')], async (_, { endFlow, }) => {
@@ -20,19 +26,20 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
     })
     .addAction(async (ctx, { globalState, state, gotoFlow, endFlow, fallBack }) => {
         stop(ctx)
-        const MSF = showMSG('opciones')
-        sendMessageChatwood(state.get('check'), 'outgoing', globalState.get('conversation_id'))
+        const MSF = showMSG('opciones');
+        sendMessageChatwood(state.get('check'), 'outgoing', globalState.get('conversation_id'));
         switch (state.get('check')) {
             case '1':
-                //stop(ctx) debe detener aqui o no en la documentacion dice que n
-                return gotoFlow(freeFlow)
+                //stop(ctx) debe detener aqui o no en la documentacion dice que no
+                return gotoFlow(freeFlow);
             case '2':
                 //stop(ctx)
-                sendMessageChatwood(showMSG('finished'), 'incoming', globalState.get('conversation_id'))
-                //return gotoFlow(flowGoodBye)
+                queue.enqueue(async () => {
+                    sendMessageChatwood(showMSG('finished'), 'incoming', globalState.get('conversation_id'));
+                });
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
-                return fallBack(MSF)
+                return fallBack(MSF);
         }
     })
 
@@ -44,9 +51,9 @@ const freeFlow = addKeyword(EVENTS.ACTION)
         sendMessageChatwood(showMSG('connected'), 'incoming', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check = blacklist.checkIf(number)
-        console.log(number, check)
+        //console.log(number, check)
         if (!check) {
-            console.log('user blocked', check)
+            console.log(`bot desactivado para: ${number}`)
             blacklist.add(number)
             sendMessageChatwood(showMSG('bot_deactivated'), 'incoming', globalState.get('conversation_id'))
             return
@@ -70,18 +77,21 @@ const flowMsgFinal = addKeyword(EVENTS.ACTION)
 
 //docs
 const mediaFlow = addKeyword(EVENTS.MEDIA)
-    .addAnswer('Hemos recibido image/video', async (ctx, { provider, gotoFlow, endFlow }) => {
-        const localPath = await provider.saveFile(ctx, { path: '../../public/docs' })
-        console.log(localPath)
-        return endFlow(showMSG('gracias'))
+    .addAnswer(`${showMSG('gracias')} ${showMSG('no_permitida')} ${showMSG('reiniciar_bot')}`, async (ctx, { endFlow }) => {
+        return endFlow()
     })
 
 //documents
 const documentFlow = addKeyword(EVENTS.DOCUMENT)
-    .addAnswer("Hemos recibido el documento que no ha adjuntado.", async (ctx, { provider, gotoFlow, endFlow }) => {
-        const localPath = await provider.saveFile(ctx, { path: '../../public/docs' })
-        console.log(localPath)
-        return endFlow(showMSG('gracias'))
+    .addAnswer("Wow! I'm sorry I can't read this document right now", async (ctx, { provider }) => {
+        const localPath = await provider.saveFile(ctx, { path: '...' })
+        console.log('docimento capturado...')
     })
 
-export { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow };
+//voice notes
+const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
+    .addAnswer(`${showMSG('gracias')} ${showMSG('no_permitida_voz')} ${showMSG('solicitud_agente')} ${showMSG('reiniciar_bot')}`, async (ctx, { endFlow }) => {
+        return endFlow()
+    })
+
+export { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow };
