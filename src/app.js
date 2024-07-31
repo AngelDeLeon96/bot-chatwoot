@@ -13,6 +13,8 @@ import Queue from 'queue-promise';
 import mimeType from 'mime-types'
 import { catch_error, verificarOCrearCarpeta, esHorarioLaboral } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
+import debounce from './utils/debounce.js';
+
 const queue = new Queue({
     concurrent: 1,
     interval: 500
@@ -24,6 +26,8 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { state, gotoFlow, globalState, fallBack, flowDynamic }) => {
         reset(ctx, gotoFlow);
+        let debounceSendMsgChat = debounce(sendMessageChatwood, 1500);
+        //debounceSendMsgChat(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id'));
         await sendMessageChatwood(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id'));
         await state.update({ name: ctx.body });
         const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
@@ -34,12 +38,14 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         }
         else {
             queue.enqueue(async () => {
-                await sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id'));
+                debounceSendMsgChat(state.get('name'), 'outgoing', globalState.get('conversation_id'));
             });
         }
     })
     .addAnswer(showMSG('solicitar_consulta'), { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, globalState, fallBack, flowDynamic }) => {
         reset(ctx, gotoFlow);
+        let debounceSendMsgChat2 = debounce(sendMessageChatwood, 1500);
+        let debounceGoto = debounce(gotoFlow, 1500)
         await sendMessageChatwood(showMSG('solicitar_consulta'), 'incoming', globalState.get('conversation_id')); // Registrar
         await state.update({ consulta: ctx.body });
         const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
@@ -50,10 +56,10 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         }
         else {
             queue.enqueue(async () => {
-                sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('conversation_id'));
+                debounceSendMsgChat2(state.get('consulta'), 'outgoing', globalState.get('conversation_id'));
             });
             console.log(`==>`);
-            return gotoFlow(flowMsgFinal);
+            return debounceGoto(flowMsgFinal);
         }
     });
 
@@ -152,7 +158,6 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
             } else {
                 return endFlow(showMSG('error_generico'))
             }
-
         }
         catch (err) {
             catch_error(err)
