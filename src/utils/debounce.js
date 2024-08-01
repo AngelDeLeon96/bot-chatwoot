@@ -1,5 +1,6 @@
+const TIMERD = process.env.DEBOUNCE_TIME ?? 10000
 
-const debounce = (func, ms) => {
+const debounce = (func, ms = TIMERD) => {
     let timeout = 0;
     return function (...args) {
         clearTimeout(timeout);
