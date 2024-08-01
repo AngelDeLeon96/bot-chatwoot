@@ -33,7 +33,7 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
         const dataRaw = await fetch(url, requestOptions);
         const data = await dataRaw.json();
-
+        //console.log(data)
         return data;
     } catch (err) {
         catch_error(err)
@@ -129,25 +129,26 @@ const recoverConversation = async (id = 0) => {
             }
         });
         const payload = res.data.payload
+
         for (let i = 0; i < payload.length; i++) {
             const conversation = payload[i];
             //console.log(conversation.id, conversation.status);
             if (conversation.status == "open") {
                 conversation_id = conversation.id;
+                //console.log(JSON.stringify(payload), '\n')
                 //console.log('La conversación abierta es la:', conversation_id);
                 break;
             }
             else {
                 conversation_id = 0
-                console.log('No se encontro una conversacion abierta.\n Se debe crear una nueva conversacion');
+                //console.log('No se encontro una conversacion abierta.\n Se debe crear una nueva conversacion');
             }
         }
+        console.log('convert: ', conversation_id)
         return conversation_id
-
     } catch (err) {
         catch_error(err)
         //console.error('err', err);
-
     }
 };
 
@@ -161,7 +162,7 @@ const recover = async (user = {}) => {
             user_info.conversation_id = conversation_id
         }
         else {
-            console.log('No se encontro el usuario:', user)
+            //console.log('No se encontro el usuario:', user)
             user_info.user_id = 0
             user_info.conversation_id = 0
         }
@@ -170,7 +171,7 @@ const recover = async (user = {}) => {
 
     } catch (err) {
         catch_error(err)
-        console.error('err', err);
+        //console.error('err', err);
     }
 };
 
