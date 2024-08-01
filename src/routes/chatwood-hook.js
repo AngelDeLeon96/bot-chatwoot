@@ -14,9 +14,8 @@ const chatWoodHook = async (req, res) => {
         const status = body.status;
         const event = body.event;
         const keywords = ['hasta luego', 'adios', 'resuelto'];
-        console.log('status: ', status, 'eventos:', event);
 
-        console.log("Comunicacion capturada con chatwoot-hook")
+        console.log("Comunicacion capturada con chatwoot-hook", JSON.stringify(body))
         /*
         if (body?.message_type === "incoming" && body?.private == true) {
             console.log('el wb esta enviando mensajes...')
@@ -25,10 +24,10 @@ const chatWoodHook = async (req, res) => {
         }*/
         let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
         let partial_status = (status === "resolved" && event === "conversation_updated")
-        console.log('palabra: ', partial, 'partial status: ', partial_status)
-
         if (partial || partial_status) {
-            if (bot.dynamicBlacklist.checkIf(phone)) {
+            let phone_check = bot.dynamicBlacklist.checkIf(phone)
+            //console.log('capturando el texto clave o cambio de estado.', partial, partial_status, phone_check)
+            if (phone_check) {
                 bot.dynamicBlacklist.remove(phone);
                 console.log('user removed:', phone);
                 await providerWS.sendMessage(`${phone}`, '⭕️Comunicacion cerrada por el agente...', {});
