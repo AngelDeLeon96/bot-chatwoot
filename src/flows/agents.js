@@ -1,7 +1,7 @@
 
 import { addKeyword, EVENTS } from '@builderbot/bot';
 import { sendMessageChatwood } from '../services/chatwood.js';
-import { reactivarBot, reset, start, stop } from '../utils/timer.js';
+import { reactivarBot, reset, start, startBot, stop } from '../utils/timer.js';
 import { showMSG } from '../i18n/i18n.js';
 import Queue from 'queue-promise';
 const queue = new Queue({
@@ -46,7 +46,7 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 
 //flujo libre
 const freeFlow = addKeyword(EVENTS.ACTION)
-    .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => reactivarBot(ctx, gotoFlow, endFlow, blacklist))
+    .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
     .addAnswer(showMSG('connected'), async (ctx, { globalState, blacklist }) => {
         sendMessageChatwood(showMSG('connected'), 'incoming', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
