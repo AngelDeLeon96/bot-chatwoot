@@ -1,17 +1,19 @@
 import { addKeyword, EVENTS } from '@builderbot/bot'
 import { showMSG } from '../i18n/i18n.js';
+import { flowAddTime } from '../flows/agents.js';
 // Objeto para almacenar los temporizadores para cada usuario
 const timers = {};
 const remainingTimes = {};
 const TIMER = process.env.TIMER ?? 100000
 const TIMER_BOT = process.env.TIMER_BOT ?? 100000
-console.log(TIMER / 60000, TIMER_BOT / 60000);
+console.log(`timer: ${TIMER / 60000} min, timer bot: ${TIMER_BOT / 60000}min`);
 
 //flujo final por inactividad
 const flujoFinal = addKeyword(EVENTS.ACTION)
     .addAnswer([showMSG('gracias'), showMSG('inactividad'), showMSG('reiniciar_bot')], async (_, { endFlow }) => {
         return endFlow();
     })
+
 
 
 //reactiva el bot despues de X tiempo
@@ -28,13 +30,32 @@ const startBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
         if (blacklist.checkIf(number)) {
             blacklist.remove(number)
         }
-        return endFlow(showMSG('bot_reactivated'));
+        return gotoFlow(flowAddTime);
     }, ms);
 
     // Almacena el tiempo restante
     remainingTimes[ctx.from] = ms;
 }
 
+const startBotCon = (ctx, blacklist, ms = TIMER_BOT) => {
+    // Borra cualquier temporizador existente para el usuario
+    if (timers[ctx]) {
+        clearTimeout(timers[ctx]);
+    }
+    // Inicia un nuevo temporizador de inactividad
+    timers[ctx.from] = setTimeout(() => {
+        let number = ctx
+        console.log(`User timeout startbot flow: ${ctx}`, blacklist.checkIf(number));
+
+        if (blacklist.checkIf(number)) {
+            blacklist.remove(number)
+        }
+        return showMSG('bot_reactivated');
+    }, ms);
+
+    // Almacena el tiempo restante
+    remainingTimes[ctx.from] = ms;
+}
 //reactiva el bot para el usuario, se acabo el tiempo
 const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     timers[ctx.from] = setTimeout(() => {
@@ -117,5 +138,5 @@ export {
     reactivarBot,
     startBot,
     resumeBot,
-    pauseBot
+    pauseBot, startBotCon
 }
