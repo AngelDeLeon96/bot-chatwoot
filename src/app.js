@@ -7,7 +7,7 @@ import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import ServerHttp from './http/server.js';
 import { sendMessageChatwood, recover, createConversationChatwood } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop, resumeBot, pauseBot } from './utils/timer.js'
-import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow } from './flows/agents.js'
+import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow, flowAddTime } from './flows/agents.js'
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
 import mimeType from 'mime-types'
@@ -28,7 +28,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         reset(ctx, gotoFlow);
         //let debounceSendMsgChat = debounce(sendMessageChatwood);
         //debounceSendMsgChat(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id'));
-        await sendMessageChatwood(showMSG('solicitar_nombre'), 'incoming', globalState.get('conversation_id'));
+        await sendMessageChatwood(showMSG('solicitar_nombre'), 'outgoing', globalState.get('conversation_id'));
         await state.update({ name: ctx.body });
         const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
         const checkedText = regex.test(ctx.body);
@@ -38,7 +38,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         }
         else {
             queue.enqueue(async () => {
-                sendMessageChatwood(state.get('name'), 'outgoing', globalState.get('conversation_id'));
+                sendMessageChatwood(state.get('name'), 'incoming', globalState.get('conversation_id'));
             });
         }
     })
@@ -46,7 +46,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         reset(ctx, gotoFlow);
         //let debounceSendMsgChat2 = debounce(sendMessageChatwood);
         //let debounceGoto = debounce(gotoFlow)
-        await sendMessageChatwood(showMSG('solicitar_consulta'), 'incoming', globalState.get('conversation_id')); // Registrar
+        await sendMessageChatwood(showMSG('solicitar_consulta'), 'outgoing', globalState.get('conversation_id')); // Registrar
         await state.update({ consulta: ctx.body });
         const regex = new RegExp('_event_[a-zA-Z0-9-_]+');
         const checkedText2 = regex.test(ctx.body);
@@ -56,7 +56,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         }
         else {
             queue.enqueue(async () => {
-                sendMessageChatwood(state.get('consulta'), 'outgoing', globalState.get('conversation_id'));
+                sendMessageChatwood(state.get('consulta'), 'incoming', globalState.get('conversation_id'));
             });
             console.log(`==>`);
             return gotoFlow(flowMsgFinal);
@@ -82,7 +82,7 @@ const userRegistered = addKeyword(EVENTS.ACTION)
             //console.log(`flow user registered`)
             const MSG0 = showMSG('solicitar_datos');
             await flowDynamic(MSG0);
-            sendMessageChatwood(MSG0, 'incoming', globalState.get('conversation_id'));
+            sendMessageChatwood(MSG0, 'outgoing', globalState.get('conversation_id'));
             //const conversation_id = globalState.get('conversation_id')
             //console.log('registering msg...')
             return gotoFlow(registerMsgConversation);
@@ -116,7 +116,7 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
 //flow principal
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAction(async (ctx, { endFlow, blacklist }) => {
-        console.log('<======>')
+        console.log('<======>', blacklist.checkIf(ctx.from.replace('+', '')))
         const now = new Date();
         if (!esHorarioLaboral(now)) {
             return endFlow(showMSG('fuera_laboral'))
@@ -140,22 +140,22 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
                 contact id= 1, conversation id= 0
             */
             if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
-                console.log('user found...', globalState.get('contact_id'));
-                sendMessageChatwood(MNSF, 'incoming', globalState.get('conversation_id'));
+                //console.log('user found...', globalState.get('contact_id'));
+                sendMessageChatwood(MNSF, 'outgoing', globalState.get('conversation_id'));
                 return gotoFlow(userRegistered);
             } else if (globalState.get('contact_id') == 0 && globalState.get('conversation_id') == 0) {
-                console.log('user not found...');
+                //console.log('user not found...');
                 return gotoFlow(userNotRegistered);
             }
             else if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') == 0) {
-                console.log(`user found: ${globalState.get('contact_id')} => creating conversation: ${globalState.get('conversation_id')}`);
+                //console.log(`user found: ${globalState.get('contact_id')} => creating conversation: ${globalState.get('conversation_id')}`);
                 await createConversationChatwood('', 'outgoing', globalState.get('contact_id'));
                 const user_data2 = await recover(ctx.from);
                 await globalState.update({ conversation_id: user_data2.conversation_id });
                 await globalState.update({ contact_id: user_data2.user_id });
-                console.log(globalState.get('contact_id'), globalState.get('conversation_id'));
+                //console.log(globalState.get('contact_id'), globalState.get('conversation_id'));
 
-                sendMessageChatwood(MNSF, 'incoming', user_data.contact_id);
+                sendMessageChatwood(MNSF, 'outgoing', user_data.contact_id);
                 return gotoFlow(userRegistered);
             } else {
                 return endFlow(showMSG('error_generico'));
@@ -170,7 +170,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, createConversation, registerMsgConversation, flowDefault, flujoFinal, flowTalkAgent, mediaFlow, documentFlow, freeFlow, flowGoodBye, flowMsgFinal, voiceNoteFlow]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, createConversation, registerMsgConversation, flowDefault, flujoFinal, flowTalkAgent, mediaFlow, documentFlow, freeFlow, flowGoodBye, flowMsgFinal, voiceNoteFlow, flowAddTime]);
     const adapterProvider = createProvider(Provider);
     const adapterDB = new Database();
 
@@ -193,8 +193,7 @@ const main = async () => {
     adapterProvider.on('message', (payload) => {
         try {
             //verificamos si el usuario esta con el bot desactivado, es decir el modo libre esta activado
-            console.log(`payload: `, JSON.stringify(payload))
-
+            //console.log(`payload: `, JSON.stringify(payload), '\n')
             let debounceSendMSG = debounce(sendMessageChatwood, 1000);
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
                 //console.log(JSON.stringify(payload))
@@ -231,7 +230,7 @@ const main = async () => {
                     if (conversation_id != 0) {
                         //console.log('data to send: ', conversation_id, attachment, msg)
                         const msg2 = debounceSendMSG(msg, 'incoming', conversation_id, attachment);
-                        pauseBot(payload)
+                        //pauseBot(payload)
                     }
                 })
             }
@@ -241,5 +240,6 @@ const main = async () => {
             //console.error('ERROR', err)
         }
     });
+
 }
 main()
