@@ -1,11 +1,13 @@
 import express from 'express';
 import { catch_error } from '../utils/utils.js';
+import { startBotCon } from '../utils/timer.js';
 const router = express.Router();
+const TIMER_BOT = process.env.TIMER_BOT ?? 600000
 // Enviar mensaje a usuario de WhatsApp
 const chatWoodHook = async (req, res) => {
     try {
-        const bot = req.bot;
         const providerWS = req.providerWS;
+        const bot = req.bot;
         const body = req.body;
         const mapperAttributes = body?.conversation?.meta?.assignee;
         const attachments = body?.attachments;
@@ -14,16 +16,9 @@ const chatWoodHook = async (req, res) => {
         const status = body.status;
         const event = body.event;
         const keywords = ['hasta luego', 'adios', 'resuelto'];
-
-        console.log("Comunicacion capturada con chatwoot-hook", JSON.stringify(body))
-        /*
-        if (body?.message_type === "incoming" && body?.private == true) {
-            console.log('el wb esta enviando mensajes...')
-            console.log(JSON.stringify(body?.conversation?.messages[0]?.conversation?.last_activity_at), '<+++++>', Date.now())
-            console.log(Date.now())
-        }*/
         let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
         let partial_status = (status === "resolved" && event === "conversation_updated")
+
         if (partial || partial_status) {
             let phone_check = bot.dynamicBlacklist.checkIf(phone)
             //console.log('capturando el texto clave o cambio de estado.', partial, partial_status, phone_check)
@@ -49,7 +44,8 @@ const chatWoodHook = async (req, res) => {
                 //console.log('idAssigned: ', idAssigned)
                 if (idAssigned) {
                     //console.log(`${phone} blocked`)
-                    bot.dynamicBlacklist.add(phone)
+                    if (!bot.dynamicBlacklist.checkIf(phone))
+                        bot.dynamicBlacklist.add(phone);
                 }
             }
             //envia los docs al whatsapp
