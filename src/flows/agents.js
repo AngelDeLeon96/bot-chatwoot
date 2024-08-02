@@ -14,28 +14,54 @@ const flowGoodBye = addKeyword(EVENTS.ACTION)
     .addAnswer([showMSG('gracias'), showMSG('reiniciar_bot')], async (_, { endFlow, }) => {
         return endFlow('Trones');
     })
-
+//
+const flowAddTime = addKeyword(EVENTS.ACTION)
+    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
+    .addAnswer([showMSG('aumentar_tiempo'), showMSG('opciones')], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
+        reset(ctx, gotoFlow);
+        sendMessageChatwood([showMSG('aumentar_tiempo'), showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
+        await state.update({ response: ctx.body });
+        console.log(state.get('response'))
+    })
+    .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
+        stop(ctx);
+        sendMessageChatwood(state.get('response'), 'incoming', globalState.get('conversation_id'));
+        //switch
+        switch (state.get('response')) {
+            case '1':
+                console.log('si')
+                return gotoFlow(freeFlow);
+            case '2':
+                console.log('no')
+                queue.enqueue(async () => {
+                    sendMessageChatwood(showMSG('finished'), 'outgoing', globalState.get('conversation_id'));
+                });
+                return endFlow(showMSG('bot_reactivated'));
+            default:
+                return fallBack();
+        }
+    })
 
 //hablar con un agente
 const flowTalkAgent = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer([showMSG('desea_comunicarse'), 'Escriba:', '1️ para ✅sí ', '2️ para ⭕️no'], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
         reset(ctx, gotoFlow);
-        sendMessageChatwood([`¿Desea comunicarse con un agente?`, showMSG('opciones')], 'incoming', globalState.get('conversation_id'));
+        sendMessageChatwood([`¿Desea comunicarse con un agente?`, showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
         await state.update({ check: ctx.body });
     })
     .addAction(async (ctx, { globalState, state, gotoFlow, endFlow, fallBack }) => {
         stop(ctx)
         const MSF = showMSG('opciones');
-        sendMessageChatwood(state.get('check'), 'outgoing', globalState.get('conversation_id'));
+        sendMessageChatwood(`${showMSG('usuario_respondio')} ${state.get('check')}`, 'incoming', globalState.get('conversation_id'));
         switch (state.get('check')) {
             case '1':
-                //stop(ctx) debe detener aqui o no en la documentacion dice que no
+                //stop(ctx) debe detener aqui o no en la documentacion dice que no, vamos al flujo libre
                 return gotoFlow(freeFlow);
             case '2':
                 //stop(ctx)
                 queue.enqueue(async () => {
-                    sendMessageChatwood(showMSG('finished'), 'incoming', globalState.get('conversation_id'));
+                    sendMessageChatwood(showMSG('finished'), 'outgoing', globalState.get('conversation_id'));
                 });
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
@@ -48,14 +74,14 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 const freeFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
     .addAnswer(showMSG('connected'), async (ctx, { globalState, blacklist }) => {
-        sendMessageChatwood(showMSG('connected'), 'incoming', globalState.get('conversation_id'))
+        sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check = blacklist.checkIf(number)
-        //console.log(number, check)
+        console.log(number, check)
         if (!check) {
             console.log(`bot desactivado para: ${number}`)
             blacklist.add(number)
-            sendMessageChatwood(showMSG('bot_deactivated'), 'incoming', globalState.get('conversation_id'))
+            sendMessageChatwood(showMSG('bot_deactivated'), 'outgoing', globalState.get('conversation_id'))
             return
         }
         //console.log(number, check)
@@ -71,7 +97,7 @@ const flowMsgFinal = addKeyword(EVENTS.ACTION)
         stop(ctx)
         const MSG = `${showMSG('gracias')}\n${showMSG('agente_comunicara')} ${ctx.from}.`;
         await flowDynamic(MSG);
-        await sendMessageChatwood(MSG, 'incoming', globalState.get('conversation_id'));
+        sendMessageChatwood(MSG, 'outgoing', globalState.get('conversation_id'));
         return gotoFlow(flowTalkAgent)
     })
 
@@ -94,4 +120,4 @@ const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
         return endFlow()
     })
 
-export { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow };
+export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow };
