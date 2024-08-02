@@ -3,7 +3,7 @@
     <picture>
       <img src="https://builderbot.vercel.app/assets/thumbnail-vector.png" height="80">
     </picture>
-    <h2 align="center">BuilderBot</h2>
+    <h2 align="center">BOT WB + Chatwoot</h2>
   </a>
 </p>
 
@@ -24,7 +24,7 @@
 With this library, you can build automated conversation flows agnostic to the WhatsApp provider, set up automated responses for frequently asked questions, receive and respond to messages automatically, and track interactions with customers. Additionally, you can easily set up triggers to expand functionalities limitlessly.
 
 ```
-npm create builderbot@latest
+npm i
 ```
 
 
