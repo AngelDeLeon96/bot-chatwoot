@@ -3,7 +3,7 @@
 	"desea_comunicarse": "Desea comunicarse con un agente?",
 	"connected": "📥Estas conectado con un agente, por un periodo de tiempo determinado❗️",
 	"solicitar_nombre": "👤Cuál es su nombre❓",
-	"solicitar_consulta": "Cuál es su consulta❓",
+	"solicitar_consulta": "🧾Cuál es su consulta❓",
 	"bienvenida": "👋¡Hola! Bienvenido al Bot de la Fiscalia General Electoral.",
 	"solicitar_datos": "🗓️Por favor, proporciónenos los siguientes datos:",
 	"gracias": "🔵Gracias por contactarnos.",
@@ -13,10 +13,12 @@
 	"agente_comunicara": "💬Un agente se estará comunicando con usted a este número:",
 	"llenar_form": "❗️Por favor, rellene el siguiente formulario:",
 	"error_generico": "❌Se produjo un error, intente nuevamente!",
-	"inactividad": "Hemos procedido con la cancelación debido a inactividad.",
-	"bot_reactivated": "🤖Bot reactivado.",
+	"inactividad": "📢Hemos procedido con la cancelación debido a inactividad.",
+	"bot_reactivated": "📢Hemos reactivado el bot para usted, ya que se ha cumplido el tiempo de actividad.",
 	"no_permitida": "🚩Acción no permitida. Por favor, llenar los datos solicitados.",
 	"no_permitida_voz": "🔇No se permite el envío de notas de voz.",
 	"solicitud_agente": "Si el agente no lo solicita.",
-	"fuera_laboral": "El horario laboral es: 8:00am a 4:00pm"
+	"fuera_laboral": "El horario laboral es: 8:00am a 4:00pm",
+	"aumentar_tiempo":"El tiempo de comunicación ha expirado. ¿Desea reanudarlo?",
+	"usuario_respondio":"El usuario respondio:"
 }
