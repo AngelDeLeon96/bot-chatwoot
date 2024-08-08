@@ -1,9 +1,10 @@
 import express from 'express';
 import { catch_error } from '../utils/utils.js';
-import { startBotCon } from '../utils/timer.js';
 const router = express.Router();
 const TIMER_BOT = process.env.TIMER_BOT ?? 600000
+import { timers } from '../utils/timer.js';
 // Enviar mensaje a usuario de WhatsApp
+console.log(TIMER_BOT / 60000)
 const chatWoodHook = async (req, res) => {
     try {
         const providerWS = req.providerWS;
@@ -40,16 +41,26 @@ const chatWoodHook = async (req, res) => {
             const file = attachments?.length ? attachments[0] : null;
             //console.log(mapperAttributes)
             if (body?.event === 'message_created' && Object.hasOwn(mapperAttributes, 'id')) {
-                const idAssigned = mapperAttributes.id ?? true
+                //const idAssigned = mapperAttributes.id ?? true
+                const idAssigned = true
                 //console.log('idAssigned: ', idAssigned)
                 if (idAssigned) {
-                    //console.log(`${phone} blocked`)
-                    if (!bot.dynamicBlacklist.checkIf(phone))
+                    console.log(`${phone} blocked...`)
+                    if (!bot.dynamicBlacklist.checkIf(phone) && !timers[phone]) {
                         bot.dynamicBlacklist.add(phone);
+                        timers[phone] = setTimeout(() => {
+                            if (bot.dynamicBlacklist.checkIf(phone)) {
+                                bot.dynamicBlacklist.remove(phone)
+                            }
+                            //await providerWS.sendMessage(`${phone}`, '', {});
+                            console.log(`bot reactivated...`);
+                        }, TIMER_BOT);
+                    }
                 }
             }
             //envia los docs al whatsapp
             if (file) {
+                console.log(file.data_url)
                 const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
                 await providerWS.sendMedia(`${phone}@c.us`, fileURL, content)
                 res.send('ok')
