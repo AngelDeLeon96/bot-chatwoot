@@ -20,5 +20,7 @@
 	"solicitud_agente": "Si el agente no lo solicita.",
 	"fuera_laboral": "El horario laboral es: 8:00am a 4:00pm",
 	"aumentar_tiempo":"El tiempo de comunicación ha expirado. ¿Desea reanudarlo?",
-	"usuario_respondio":"El usuario respondio:"
+	"usuario_respondio":"El usuario respondio:",
+	"opcion_1":"1️⃣ para ✅sí",
+	"opcion_2":"2️⃣ para ⭕️no"
 }
