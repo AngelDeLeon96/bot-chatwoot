@@ -45,9 +45,9 @@ const flowAddTime = addKeyword(EVENTS.ACTION)
 //hablar con un agente
 const flowTalkAgent = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer([showMSG('desea_comunicarse'), 'Escriba:', '1️ para ✅sí ', '2️ para ⭕️no'], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
+    .addAnswer([showMSG('desea_comunicarse'), 'Escriba:', showMSG('opcion_1'), showMSG('opcion_2')], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
         reset(ctx, gotoFlow);
-        sendMessageChatwood([`¿Desea comunicarse con un agente?`, showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
+        sendMessageChatwood([showMSG("desea_comunicarse"), showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
         await state.update({ check: ctx.body });
     })
     .addAction(async (ctx, { globalState, state, gotoFlow, endFlow, fallBack }) => {
@@ -61,7 +61,7 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
             case '2':
                 //stop(ctx)
                 queue.enqueue(async () => {
-                    sendMessageChatwood(showMSG('finished'), 'outgoing', globalState.get('conversation_id'));
+                    await sendMessageChatwood(showMSG('finished'), 'outgoing', globalState.get('conversation_id'));
                 });
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
@@ -74,7 +74,7 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 const freeFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
     .addAnswer(showMSG('connected'), async (ctx, { globalState, blacklist }) => {
-        sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
+        //sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check = blacklist.checkIf(number)
         console.log(number, check)
