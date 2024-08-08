@@ -7,11 +7,11 @@
   "scripts": {
     "lint": "eslint . --no-ignore",
     "dev": "npm run lint && nodemon ./src/app.js",
-    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 node --env-file=.env ./src/app.js"
+    "start": "node --env-file=.env ./src/app.js"
   },
   "keywords": [],
   "dependencies": {
-    "@builderbot/bot": "1.1.7",
+    "@builderbot/bot": "1.2.1",
     "@builderbot/provider-baileys": "1.1.7",
     "@whiskeysockets/baileys": "^6.7.5",
     "axios": "^1.7.2",

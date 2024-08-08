@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@builderbot/bot':
-        specifier: 1.1.7
-        version: 1.1.7
+        specifier: 1.2.1
+        version: 1.2.1
       '@builderbot/provider-baileys':
         specifier: 1.1.7
         version: 1.1.7
@@ -714,8 +714,8 @@ packages:
     resolution: {integrity: sha512-XEFXSlxiG5td2EJRe8vOmRbaXVgfcBlszKujvVmWIK/UpywWljQCfzAv3RQCGujWQ1RD4YYWEAqDXfuJiy8f5Q==}
     engines: {node: '>=6.9.0'}
 
-  '@builderbot/bot@1.1.7':
-    resolution: {integrity: sha512-+9V5sOMNLmZ76s3fEu8zGTcqiGcMVgWGMh2MzP4sq6zO9xNj3LHsCHPqpefYP37134IMTus0SYHoqCqL2drfdQ==}
+  '@builderbot/bot@1.2.1':
+    resolution: {integrity: sha512-6af7USBLK9Ez8lG27TY++egTEXIMSmWDYuo17UyHwhOhigcqW816ySB6bb231CVqFnURh5aS4iqPj94RCuY7zA==}
 
   '@builderbot/provider-baileys@1.1.7':
     resolution: {integrity: sha512-adFQWoRlWOBesxfbFOoBpbM+t7yy5ye5fEYQY8kEE3tVSNhZrR8KF6XNVzI7KyR813mdHjWvCyUyGyxWMRcOtg==}
@@ -3891,7 +3891,7 @@ snapshots:
       '@babel/helper-validator-identifier': 7.24.7
       to-fast-properties: 2.0.0
 
-  '@builderbot/bot@1.1.7':
+  '@builderbot/bot@1.2.1':
     dependencies:
       '@ffmpeg-installer/ffmpeg': 1.1.0
       body-parser: 1.20.2
