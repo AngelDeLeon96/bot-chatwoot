@@ -37,25 +37,6 @@ const startBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     remainingTimes[ctx.from] = ms;
 }
 
-const startBotCon = (ctx, blacklist, ms = TIMER_BOT) => {
-    // Borra cualquier temporizador existente para el usuario
-    if (timers[ctx]) {
-        clearTimeout(timers[ctx]);
-    }
-    // Inicia un nuevo temporizador de inactividad
-    timers[ctx.from] = setTimeout(() => {
-        let number = ctx
-        console.log(`User timeout startbot flow: ${ctx}`, blacklist.checkIf(number));
-
-        if (blacklist.checkIf(number)) {
-            blacklist.remove(number)
-        }
-        return showMSG('bot_reactivated');
-    }, ms);
-
-    // Almacena el tiempo restante
-    remainingTimes[ctx.from] = ms;
-}
 //reactiva el bot para el usuario, se acabo el tiempo
 const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     timers[ctx.from] = setTimeout(() => {
@@ -138,5 +119,5 @@ export {
     reactivarBot,
     startBot,
     resumeBot,
-    pauseBot, startBotCon
+    pauseBot, timers
 }
