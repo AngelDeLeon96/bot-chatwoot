@@ -36,13 +36,13 @@ const chatWoodHook = async (req, res) => {
         const checkIfMessage = body?.private == false && body?.event == "message_created" && body?.message_type === "outgoing" && body?.conversation?.channel.includes("Channel::Api")
         //console.log(`checkif`, checkIfMessage, '\n')
         if (checkIfMessage) {
-            //console.log('mensaje enviado desde CRM', `MSG is: ${body?.content}`, checkIfMessage, Date.now())
+            console.log('mensaje enviado desde CRM', `MSG is: ${body?.content}`, checkIfMessage, Date.now())
             const content = body?.content ?? '';
             const file = attachments?.length ? attachments[0] : null;
             //console.log(mapperAttributes)
             if (body?.event === 'message_created' && Object.hasOwn(mapperAttributes, 'id')) {
-                //const idAssigned = mapperAttributes.id ?? true
-                const idAssigned = true
+                const idAssigned = mapperAttributes.id ?? true
+                //const idAssigned = true
                 //console.log('idAssigned: ', idAssigned)
                 if (idAssigned) {
                     console.log(`${phone} blocked...`)
