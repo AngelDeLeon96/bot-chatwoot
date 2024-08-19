@@ -17,6 +17,7 @@
     "axios": "^1.7.2",
     "express": "^4.19.2",
     "i18n": "^0.15.1",
+    "lru-cache": "^11.0.0",
     "mime-types": "^2.1.35",
     "queue-promise": "^2.2.1"
   },

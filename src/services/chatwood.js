@@ -2,6 +2,7 @@ import axios from 'axios';
 import { catch_error } from '../utils/utils.js'
 import { readFile } from 'fs/promises'
 import { showMSG } from '../i18n/i18n.js';
+import { LRUCache } from 'lru-cache'
 
 const SERVER = process.env.SERVER_DOCKER || "http://localhost";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
@@ -9,11 +10,22 @@ const INBOX_ID = process.env.INBOX_ID ?? 5
 const API = process.env.API
 const PORT = process.env.PORT
 
-console.log('server: ', SERVER, PORT)
+console.log('server: ', SERVER, PORT);
+
+const clearCache = () => {
+    cache.clear();
+    console.log('Caché limpiado');
+};
+
 const builderURL = (path) => {
     return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
 }
-
+// Configuración del caché
+const cache = new LRUCache({
+    max: 1000, // Número máximo de elementos en caché
+    maxAge: 1000 * 60 * 60 // Tiempo de vida: 1 hora
+});
+//create
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
     try {
         const myHeaders = new Headers();
@@ -43,16 +55,14 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
 const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0, attachments = []) => {
     try {
-        const url = builderURL(`conversations/${conversation_id}/messages`)
-        const form = new FormData()
-        //let msg2 = !msg.includes('_event_voice_note') ? msg : showMSG('no_permitida')
+        const url = builderURL(`conversations/${conversation_id}/messages`);
+        const form = new FormData();
         form.set("content", msg);
         form.set("message_type", message_type);
         form.set("private", "true");
 
         if (attachments.length) {
             const fileName = attachments[0].split('/').pop();
-            //console.log('Archivo adjunto:', fileName);
             try {
                 const fileContent = await readFile(attachments[0]);
                 const blob = new Blob([fileContent]);
@@ -62,27 +72,48 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
                 throw readFileError;
             }
         }
-        const dataFetch = await fetch(url,
-            {
-                method: "POST",
-                headers: {
-                    api_access_token: API
-                },
-                body: form
-            }
-        );
-        //console.log(dataFetch)
-        const data = await dataFetch.json();
-        return data
+
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                api_access_token: API
+            },
+            body: form
+        });
+
+        if (!response.ok) {
+            const textResponse = await response.text();
+            console.error('El servidor respondió con:', response.status, response.statusText);
+            console.error('Cuerpo de la respuesta:', textResponse);
+            throw new Error(`¡Error HTTP! estado: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const textResponse = await response.text();
+            console.error('Tipo de contenido inesperado:', contentType);
+            console.error('Cuerpo de la respuesta:', textResponse);
+            throw new Error(`Se esperaba JSON, pero se recibió ${contentType}`);
+        }
+
+        const data = await response.json();
+        // Guardar los datos en caché
+        return data;
 
     } catch (err) {
-        catch_error(err)
-        console.error(err);
+        catch_error(err);
+        console.error('Error en sendMessageChatwood:', err);
+        throw err; // Re-lanza el error para que el llamador pueda manejarlo
     }
 };
 
 const searchUser = async (user = "") => {
     try {
+        const cachedData = cache.get(user);
+        if (cachedData) {
+            console.log('Usando datos en caché para user:', cachedData);
+            return cachedData;
+        }
         const url = builderURL(`contacts/search?q=${user}`)
         //console.log(url)
         let count = null
@@ -109,6 +140,8 @@ const searchUser = async (user = "") => {
         }
         //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
         data_user.count = count
+        cache.set(user, data_user);
+
         return data_user;
     } catch (err) {
         //catch_error(err)
@@ -117,8 +150,14 @@ const searchUser = async (user = "") => {
     }
 };
 
-const recoverConversation = async (id = 0) => {
+const recoverConversation = async (id = 0, user = "") => {
     try {
+        const cachedData = cache.get(id);
+        if (cachedData) {
+            console.log('Usando datos en caché para conversation_id:', cachedData);
+            return cachedData;
+        }
+
         let conversation_id = 0
         const url = builderURL(`contacts/${id}/conversations`)
         const res = await axios.get(url, {
@@ -144,7 +183,10 @@ const recoverConversation = async (id = 0) => {
                 //console.log('No se encontro una conversacion abierta.\n Se debe crear una nueva conversacion');
             }
         }
-        console.log('convert: ', conversation_id)
+        //console.log('convert: ', conversation_id)
+        // Guardar los datos en caché
+        cache.set(id, conversation_id);
+
         return conversation_id
     } catch (err) {
         catch_error(err)
@@ -158,15 +200,15 @@ const recover = async (user = {}) => {
         const data_user = await searchUser(user)
         if (data_user.user_id > 0) {
             user_info.user_id = data_user.user_id
-            const conversation_id = await recoverConversation(data_user.user_id)
+            const conversation_id = await recoverConversation(data_user.user_id, user)
             user_info.conversation_id = conversation_id
         }
         else {
-            //console.log('No se encontro el usuario:', user)
+            console.log('No se encontro el usuario:', user)
             user_info.user_id = 0
             user_info.conversation_id = 0
         }
-        //console.log(user_info)cleacdc
+        //console.log(user_info)
         return user_info
 
     } catch (err) {
@@ -196,4 +238,4 @@ const checking = async (user = "") => {
     }
 }
 
-export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover, checking };
+export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover, clearCache };

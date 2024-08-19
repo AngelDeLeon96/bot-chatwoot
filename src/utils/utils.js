@@ -1,6 +1,7 @@
 import { addKeyword } from '@builderbot/bot';
-import fs from 'fs'
-import mime from 'mime-types'
+import fs from 'fs';
+import mime from 'mime-types';
+
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 
 const catch_error = (error) => {
@@ -20,12 +21,14 @@ const catch_error = (error) => {
     }
 
 }
+
 const numberClean = (raw) => {
     //Mute +3400000 
     const number = raw.toLowerCase().replace('mute', '').replace(/\s/g, '').replace('+', '')
     // 3400000
     return number
 }
+
 const blackListFlow = addKeyword('mute')
     .addAction(async (ctx, { blacklist, flowDynamic }) => {
         if (ctx.from === ADMIN_NUMBER) {
@@ -61,6 +64,7 @@ const verificarOCrearCarpeta = (ruta) => {
         });
     });
 }
+
 const esHorarioLaboral = (fecha) => {
     const hora_inicio = process.env.H_INICIO ?? 8;
     const hora_salida = process.env.H_SALIDA ?? 16;
@@ -76,10 +80,21 @@ const esHorarioLaboral = (fecha) => {
     console.log(hora_inicio, hora_salida, horaActual)
     return esHoraLaboral && esDiaLaboral ? true : false
 }
+
 const getExtensionFromMime = (mimeType) => {
     const extension = mime.extension(mimeType);
     console.log(`MIME type: ${mimeType}, Extension: ${extension}`);
     return extension || 'bin';  // 'bin' como fallback si no se encuentra una extensión
 }
 
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime };
+const getMimeWB = (messages) => {
+    for (let key in messages) {
+        if (key.endsWith('Message')) {
+            console.log(`El mensaje es de tipo: ${key}`);
+            return key;
+        }
+    }
+    console.log('Tipo de mensaje no reconocido');
+    return null;
+}
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB };
