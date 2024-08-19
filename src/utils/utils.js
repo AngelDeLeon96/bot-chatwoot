@@ -1,6 +1,6 @@
 import { addKeyword } from '@builderbot/bot';
 import fs from 'fs'
-
+import mime from 'mime-types'
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 
 const catch_error = (error) => {
@@ -76,5 +76,10 @@ const esHorarioLaboral = (fecha) => {
     console.log(hora_inicio, hora_salida, horaActual)
     return esHoraLaboral && esDiaLaboral ? true : false
 }
+const getExtensionFromMime = (mimeType) => {
+    const extension = mime.extension(mimeType);
+    console.log(`MIME type: ${mimeType}, Extension: ${extension}`);
+    return extension || 'bin';  // 'bin' como fallback si no se encuentra una extensión
+}
 
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral };
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime };
