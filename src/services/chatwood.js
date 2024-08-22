@@ -1,16 +1,17 @@
 import axios from 'axios';
-import { catch_error } from '../utils/utils.js'
-import { readFile } from 'fs/promises'
+import { catch_error } from '../utils/utils.js';
+import { readFile } from 'fs/promises';
 import { showMSG } from '../i18n/i18n.js';
-import { LRUCache } from 'lru-cache'
+import { LRUCache } from 'lru-cache';
+import { releaseLock, acquireLock } from '../utils/in-memory-lock.js';
 
 const SERVER = process.env.SERVER_DOCKER || "http://localhost";
-const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2
-const INBOX_ID = process.env.INBOX_ID ?? 5
-const API = process.env.API
-const PORT = process.env.PORT
+const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2;
+const INBOX_ID = process.env.INBOX_ID ?? 5;
+const API = process.env.API;
+const PORT = process.env.PORT;
 
-console.log('server: ', SERVER, PORT);
+//console.log('server: ', SERVER, PORT);
 
 const clearCache = () => {
     cache.clear();
@@ -45,8 +46,8 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
         const dataRaw = await fetch(url, requestOptions);
         const data = await dataRaw.json();
-        //console.log(data)
-        return data;
+        //console.log('conv created: ', JSON.stringify(data))
+        return data.id;
     } catch (err) {
         catch_error(err)
         //return null
@@ -109,11 +110,12 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
 const searchUser = async (user = "") => {
     try {
+        /*
         const cachedData = cache.get(user);
         if (cachedData) {
             console.log('Usando datos en caché para user:', cachedData);
             return cachedData;
-        }
+        }*/
         const url = builderURL(`contacts/search?q=${user}`)
         //console.log(url)
         let count = null
@@ -125,6 +127,7 @@ const searchUser = async (user = "") => {
                 // Añade otros encabezados si es necesario
             }
         });
+
         const { meta, payload } = res.data
         count = meta.count
         //verificamos si hay datos
@@ -132,7 +135,6 @@ const searchUser = async (user = "") => {
             payload.forEach(element => {
                 //se agrega el id del usuario
                 data_user.user_id = element.id
-                //data_user.push(element.id)
             });
         } else {
             //no hay datos, no existe el user
@@ -140,7 +142,8 @@ const searchUser = async (user = "") => {
         }
         //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
         data_user.count = count
-        cache.set(user, data_user);
+
+        //cleacacache.set(user, data_user);
 
         return data_user;
     } catch (err) {
@@ -152,11 +155,11 @@ const searchUser = async (user = "") => {
 
 const recoverConversation = async (id = 0, user = "") => {
     try {
-        const cachedData = cache.get(id);
+        /*const cachedData = cache.get(id);
         if (cachedData) {
             console.log('Usando datos en caché para conversation_id:', cachedData);
             return cachedData;
-        }
+        }*/
 
         let conversation_id = 0
         const url = builderURL(`contacts/${id}/conversations`)
@@ -168,14 +171,13 @@ const recoverConversation = async (id = 0, user = "") => {
             }
         });
         const payload = res.data.payload
+        //console.log(payload)
 
         for (let i = 0; i < payload.length; i++) {
             const conversation = payload[i];
             //console.log(conversation.id, conversation.status);
             if (conversation.status == "open") {
                 conversation_id = conversation.id;
-                //console.log(JSON.stringify(payload), '\n')
-                //console.log('La conversación abierta es la:', conversation_id);
                 break;
             }
             else {
@@ -183,9 +185,11 @@ const recoverConversation = async (id = 0, user = "") => {
                 //console.log('No se encontro una conversacion abierta.\n Se debe crear una nueva conversacion');
             }
         }
-        //console.log('convert: ', conversation_id)
+
         // Guardar los datos en caché
-        cache.set(id, conversation_id);
+        /*
+        if (id > 0)
+            cache.set(id, conversation_id);*/
 
         return conversation_id
     } catch (err) {
@@ -194,26 +198,40 @@ const recoverConversation = async (id = 0, user = "") => {
     }
 };
 
+
+
 const recover = async (user = {}) => {
     try {
         const user_info = {}
         const data_user = await searchUser(user)
+
         if (data_user.user_id > 0) {
             user_info.user_id = data_user.user_id
-            const conversation_id = await recoverConversation(data_user.user_id, user)
-            user_info.conversation_id = conversation_id
+            const lockKey = `user_conversation_${data_user.user_id}`;
+            try {
+                await acquireLock(lockKey);
+                const conversation_id = await recoverConversation(data_user.user_id, user)
+                //console.log('id capturado: ', conversation_id)
+                if (conversation_id === 0) {
+                    const new_conv = await createConversationChatwood('', 'outgoing', user_info.user_id)
+                    console.log('Nueva conversación creada:', new_conv)
+                    user_info.conversation_id = new_conv
+                } else {
+                    user_info.conversation_id = conversation_id
+                }
+            } finally {
+                await releaseLock(lockKey);
+            }
+        } else {
+            console.log('No se encontró el usuario:', user)
+            return null
         }
-        else {
-            console.log('No se encontro el usuario:', user)
-            user_info.user_id = 0
-            user_info.conversation_id = 0
-        }
-        //console.log(user_info)
+
         return user_info
 
     } catch (err) {
-        catch_error(err)
-        //console.error('err', err);
+        console.error('Error en recover:', err)
+        throw err
     }
 };
 
