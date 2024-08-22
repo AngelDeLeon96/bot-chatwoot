@@ -1,7 +1,6 @@
 
 import { addKeyword, EVENTS } from '@builderbot/bot';
-import { sendMessageChatwood } from '../services/chatwood.js';
-import { reactivarBot, reset, start, startBot, stop } from '../utils/timer.js';
+import { reset, start, startBot, stop } from '../utils/timer.js';
 import { showMSG } from '../i18n/i18n.js';
 import Queue from 'queue-promise';
 const queue = new Queue({
@@ -68,13 +67,13 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 //flujo libre
 const freeFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
-    .addAnswer(showMSG('connected'), async (ctx, { globalState, blacklist }) => {
+    .addAnswer(`${showMSG('connected')} ${process.env.TIMER_BOT / 60000} minutos.`, async (ctx, { globalState, blacklist }) => {
         //sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check = blacklist.checkIf(number)
         console.log(number, check)
         if (!check) {
-            console.log(`bot desactivado para: ${number}`)
+            console.log(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
             blacklist.add(number)
             //sendMessageChatwood(showMSG('bot_deactivated'), 'outgoing', globalState.get('conversation_id'))
             return
@@ -88,25 +87,25 @@ const flowDefault = addKeyword(EVENTS.ACTION)
 
 //flow salir
 const flowMsgFinal = addKeyword(EVENTS.ACTION)
-    .addAction(async (ctx, { flowDynamic, state, globalState, gotoFlow }) => {
+    .addAnswer(`${showMSG('gracias')}\n${showMSG('agente_comunicara')}`)
+    .addAction(async (ctx, { endFlow }) => {
         stop(ctx)
-        const MSG = `${showMSG('gracias')}\n${showMSG('agente_comunicara')} ${ctx.from}.`;
-        await flowDynamic(MSG);
         //sendMessageChatwood(MSG, 'outgoing', globalState.get('conversation_id'));
-        return gotoFlow(flowTalkAgent)
+        return endFlow()
     })
 
 //docs
 const mediaFlow = addKeyword(EVENTS.MEDIA)
-    .addAnswer(`${showMSG('gracias')} ${showMSG('no_permitida')} ${showMSG('reiniciar_bot')}`, async (ctx, { endFlow }) => {
-        return endFlow()
+    .addAnswer(`media capturada`)
+    .addAction(async (ctx, { flowDynamic, provider }) => {
+        console.log('2. media flow', ctx);
     })
 
 //documents
-const documentFlow = addKeyword(EVENTS.DOCUMENT)
-    .addAnswer("Wow! I'm sorry I can't read this document right now", async (ctx, { provider }) => {
-        const localPath = await provider.saveFile(ctx, { path: '...' })
-        console.log('docimento capturado...')
+const documentFlow2 = addKeyword(EVENTS.DOCUMENT)
+    .addAnswer("Wow! I'm sorry I can't read this document right now")
+    .addAction(async (ctx, { flowDynamic, provider }) => {
+        console.log('2. doc flow', ctx);
     })
 
 //voice notes
@@ -115,4 +114,4 @@ const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
         return endFlow()
     })
 
-export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow, mediaFlow, voiceNoteFlow };
+export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow };
