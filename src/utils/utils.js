@@ -2,23 +2,28 @@ import { addKeyword } from '@builderbot/bot';
 import fs from 'fs';
 import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import logger from './logger.js'
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 
 const catch_error = (error) => {
     if (error.response) {
         // El servidor respondió con un código de estado fuera del rango 2xx
         if (error.response.status === 404) {
-            console.log('Recurso no encontrado (Error 404).');
+            //console.log('Recurso no encontrado (Error 404).');
+            logger.warn('Recurso no encontrado (Error 404).', { 'error': error })
 
         } else {
-            console.log(`Error en la respuesta del servidor: ${error.response.status}`);
+            //console.log(`Error en la respuesta del servidor: ${error.response.status}`);
+            logger.error(`Error en la respuesta del servidor: `, { 'error': error })
         }
     } else if (error.request) {
         // La solicitud fue hecha pero no se recibió respuesta
-        console.log('No se recibió respuesta del servidor.');
+        logger.info('No se recibió respuesta del servidor.', { 'error': error })
+        //console.log('No se recibió respuesta del servidor.');
     } else {
         // Algo pasó al configurar la solicitud que lanzó un error
-        console.log('Error en la configuración de la solicitud:', error);
+        //console.log('Error en la configuración de la solicitud:', error);
+        logger.error('Error en la configuración de la solicitud:', { 'error': error });
     }
 
 }
@@ -77,14 +82,14 @@ const esHorarioLaboral = (fecha) => {
     const horaActual = fecha.getHours();
     const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
     const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
-    console.log(esDiaLaboral, esHoraLaboral)
-    console.log(hora_inicio, hora_salida, horaActual)
+    //console.log(esDiaLaboral, esHoraLaboral)
+    //console.log(hora_inicio, hora_salida, horaActual)
     return esHoraLaboral && esDiaLaboral ? true : false
 }
 
 const getExtensionFromMime = (mimeType) => {
     const extension = mime.extension(mimeType);
-    console.log(`MIME type: ${mimeType}, Extension: ${extension}`);
+    //console.log(`MIME type: ${mimeType}, Extension: ${extension}`);
     return extension || 'bin';  // 'bin' como fallback si no se encuentra una extensión
 }
 
@@ -95,7 +100,7 @@ const getMimeWB = (messages) => {
             return key;
         }
     }
-    console.log('Tipo de mensaje no reconocido');
+    //console.log('Tipo de mensaje no reconocido');
     return null;
 }
 const saveMediaWB = async (payload) => {
@@ -134,16 +139,16 @@ const saveMediaWB = async (payload) => {
                 fs.promises.writeFile(pathFile, buffer);
                 attachment.push(pathFile);
             } catch (error) {
-                logger.error('Error al procesar el archivo:', error)
-                console.error('Error al procesar el archivo:', error);
+                logger.error('Error al procesar el archivo:', { 'error': error })
+                //console.error('Error al procesar el archivo:', error);
                 msg = "Hubo un error al procesar el archivo adjunto.";
             }
         } else {
-            console.log('Archivo de audio o video no permitido');
+            //console.log('Archivo de audio o video no permitido');
             msg = "El usuario intento enviar de audios, notas de voz o videos.";
         }
     } else {
-        console.log('msg without attachments')
+        //console.log('msg without attachments')
         msg = payload?.body;
     }
 
