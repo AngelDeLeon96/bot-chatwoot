@@ -20,7 +20,7 @@ const flowAddTime = addKeyword(EVENTS.ACTION)
         reset(ctx, gotoFlow);
         //sendMessageChatwood([showMSG('aumentar_tiempo'), showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
         await state.update({ response: ctx.body });
-        console.log(state.get('response'))
+        //console.log(state.get('response'))
     })
     .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
         stop(ctx);
@@ -28,10 +28,10 @@ const flowAddTime = addKeyword(EVENTS.ACTION)
         //switch
         switch (state.get('response')) {
             case '1':
-                console.log('si')
+                //console.log('si')
                 return gotoFlow(freeFlow);
             case '2':
-                console.log('no')
+                //console.log('no')
                 return endFlow(showMSG('bot_reactivated'));
             default:
                 return fallBack();
@@ -71,11 +71,11 @@ const freeFlow = addKeyword(EVENTS.ACTION)
         //sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check = blacklist.checkIf(number)
-        console.log(number, check)
+        //console.log(number, check)
         if (!check) {
-            console.log(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
+            //console.log(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
             blacklist.add(number)
-            //sendMessageChatwood(showMSG('bot_deactivated'), 'outgoing', globalState.get('conversation_id'))
+
             return
         }
         //console.log(number, check)
@@ -87,7 +87,7 @@ const flowDefault = addKeyword(EVENTS.ACTION)
 
 //flow salir
 const flowMsgFinal = addKeyword(EVENTS.ACTION)
-    .addAnswer(`${showMSG('gracias')}\n${showMSG('agente_comunicara')}`)
+    .addAnswer(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`)
     .addAction(async (ctx, { endFlow }) => {
         stop(ctx)
         //sendMessageChatwood(MSG, 'outgoing', globalState.get('conversation_id'));
@@ -96,22 +96,23 @@ const flowMsgFinal = addKeyword(EVENTS.ACTION)
 
 //docs
 const mediaFlow = addKeyword(EVENTS.MEDIA)
-    .addAnswer(`media capturada`)
-    .addAction(async (ctx, { flowDynamic, provider }) => {
-        console.log('2. media flow', ctx);
+    .addAnswer(showMSG('gracias'))
+    .addAction(async (_, { endFlow }) => {
+        return endFlow(`${showMSG('reiniciar_bot')}`)
     })
 
 //documents
 const documentFlow2 = addKeyword(EVENTS.DOCUMENT)
-    .addAnswer("Wow! I'm sorry I can't read this document right now")
-    .addAction(async (ctx, { flowDynamic, provider }) => {
-        console.log('2. doc flow', ctx);
+    .addAnswer(showMSG('gracias'))
+    .addAction(async (_, { endFlow }) => {
+        return endFlow(`${showMSG('reiniciar_bot')}`)
     })
 
 //voice notes
 const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
-    .addAnswer(`${showMSG('gracias')} ${showMSG('no_permitida_voz')} ${showMSG('solicitud_agente')} ${showMSG('reiniciar_bot')}`, async (ctx, { endFlow }) => {
-        return endFlow()
+    .addAnswer(showMSG('gracias'))
+    .addAction(async (_, { endFlow }) => {
+        return endFlow(`${showMSG('reiniciar_bot')}`)
     })
 
 export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow };
