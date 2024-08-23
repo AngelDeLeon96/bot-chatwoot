@@ -48,6 +48,7 @@ const primera_vez = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('llenar_form')}`, { media: path.join(process.cwd(), 'public/files', 'FGE-solicitud y declaracion CO.pdf') })
     .addAnswer(`${showMSG('subir_pdf')}`, { capture: true }, async (ctx, { fallBack, globalState }) => {
+        reset(ctx)
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG === "senderKeyDistributionMessage") {
             return fallBack(showMSG('no_permitida'));
@@ -57,8 +58,11 @@ const primera_vez = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
-    .addAction(async (ctx, { endFlow }) => {
-        return endFlow(`${showMSG('formulario_captado')}`)
+    .addAnswer(`${showMSG('formulario_captado')}`)
+    .addAction(async (ctx, { gotoFlow }) => {
+        stop(ctx)
+        //return endFlow(`${showMSG('formulario_captado')}`)
+        return gotoFlow(prima_menu)
     })
 
 const attach_forms = addKeyword(EVENTS.ACTION)
@@ -85,9 +89,11 @@ const attach_forms = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
-    .addAction(async (ctx, { endFlow }) => {
+    .addAnswer(`${showMSG('formulario_captado')}`)
+    .addAction(async (ctx, { gotoFlow }) => {
         stop(ctx)
-        return endFlow(`${showMSG('formulario_captado')}`)
+        //return endFlow(`${showMSG('formulario_captado')}`)
+        return gotoFlow(prima_menu)
     })
 
 
@@ -104,9 +110,11 @@ const attach_forms_continuidad = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
-    .addAction(async (ctx, { endFlow }) => {
+    .addAnswer(`${showMSG('formulario_captado')}`)
+    .addAction(async (ctx, { gotoFlow }) => {
         stop(ctx)
-        return endFlow(`${showMSG('formulario_captado')}`)
+        //return endFlow(`${showMSG('formulario_captado')}`)
+        return gotoFlow(prima_menu)
     })
 
 
