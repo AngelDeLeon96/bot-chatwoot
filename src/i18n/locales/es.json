@@ -1,7 +1,7 @@
 {
 	"reiniciar_bot": "Si desea volverse a comunicar, escriba: hola, para volver a hablar con el bot.",
 	"desea_comunicarse": "Desea comunicarse con un agente?",
-	"connected": "Se ha establecido una conexión con uno de nuestros agentes. Esta sesión tiene una duración limitada de",
+	"connected": "Uno de nuestros agentes se estará comunicando, por favor espere. Esta sesión tiene una duración limitada de",
 	"solicitar_nombre": "Por favor, indíqueme su nombre completo.",
 	"solicitar_cedula": "Por favor, indíqueme su número de cédula.",
 	"solicitar_consulta": "¿Cuál sería el motivo de su consulta?",
@@ -33,5 +33,6 @@
 	"adjuntar_form": "Adjuntar formulario en formato PDF.",
 	"adjuntar_continuidad": "Por favor, adjunte las certificaciones de continuidad laboral emitidas por otras instituciones, si las tiene.",
 	"menu": "Menú de opciones:",
-	"selected": "Selecciono: "
+	"selected": "Selecciono: ",
+	"subir_pdf":"Una vez completado y firmado, por favor suba el formulario en formato PDF."
 }
