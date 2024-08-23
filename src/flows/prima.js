@@ -6,6 +6,8 @@ import { showMSG } from '../i18n/i18n.js';
 import { freeFlow } from './agents.js';
 import Queue from 'queue-promise';
 import { saveMediaWB, getMimeWB } from '../utils/utils.js';
+
+
 const queue = new Queue({
     concurrent: 1,
     interval: 500
@@ -45,46 +47,55 @@ const prima_menu = addKeyword(EVENTS.ACTION)
 const primera_vez = addKeyword(EVENTS.DOCUMENT)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('llenar_form')} y subalo.`, { media: path.join(process.cwd(), 'public/files', 'FGE-solicitud y declaracion CO.pdf') })
-    .addAnswer(`Por favor suba el formulario lleno y firmado.`, { capture: true }, async (ctx, { gotoFlow }) => {
-        console.log(ctx.body)
+    .addAnswer(`Por favor suba el formulario lleno y firmado en formato pdf.`, { capture: true }, async (ctx, { gotoFlow, fallBack, globalState }) => {
+        let typeMSG = getMimeWB(ctx.message)
+        if (typeMSG === "senderKeyDistributionMessage") {
+            return fallBack(showMSG('no_permitida'));
+        }
+        else {
+            let [msg, attachment] = await saveMediaWB(ctx)
+            sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
+        }
     })
     .addAction(async (ctx, { endFlow }) => {
-        return endFlow()
+        return endFlow(`${showMSG('formulario_captado')}`)
     })
 
 const attach_forms = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`${showMSG('adjuntar_form')}`, async (ctx, { provider }) => {
-        try {
-            reset(ctx)
-            const localPath = await provider.saveFile(ctx, { path: path.join(process.cwd(), 'public/files') })
-            console.log(localPath)
+    .addAnswer(`${showMSG('adjuntar_form')}`, async (ctx, { provider, fallBack, globalState }) => {
+        reset(ctx)
+        let typeMSG = getMimeWB(ctx.message)
+        if (typeMSG === "senderKeyDistributionMessage") {
+            return fallBack(showMSG('no_permitida'));
         }
-        catch (err) {
-            console.error(err)
+        else {
+            let [msg, attachment] = await saveMediaWB(ctx)
+            sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
-    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { provider }) => {
-        try {
-            reset(ctx)
-            //const localPath = await provider.saveFile(ctx, { path: path.join(process.cwd(), 'public/files') })
-            console.log(ctx)
+    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { provider, fallBack, globalState }) => {
+        reset(ctx)
+        let typeMSG = getMimeWB(ctx.message)
+        if (typeMSG === "senderKeyDistributionMessage") {
+            return fallBack(showMSG('no_permitida'));
         }
-        catch (err) {
-            console.error(err)
+        else {
+            let [msg, attachment] = await saveMediaWB(ctx)
+            sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
     .addAction(async (ctx, { endFlow }) => {
-        return endFlow()
+        stop(ctx)
+        return endFlow(`${showMSG('formulario_captado')}`)
     })
 
-const attach_forms_continuidad = addKeyword('attach')
+
+const attach_forms_continuidad = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { provider, globalState, fallBack }) => {
         reset(ctx)
-        console.log(JSON.stringify(ctx))
         let typeMSG = getMimeWB(ctx.message)
-
         if (typeMSG === "senderKeyDistributionMessage") {
             return fallBack(showMSG('no_permitida'));
         }

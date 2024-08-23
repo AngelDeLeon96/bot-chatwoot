@@ -147,8 +147,8 @@ const searchUser = async (user = "") => {
 
         return data_user;
     } catch (err) {
-        //catch_error(err)
-        console.error(err)
+        catch_error(err)
+        //console.error(err)
 
     }
 };
