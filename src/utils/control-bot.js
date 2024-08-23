@@ -9,7 +9,7 @@ const controlBot = (phone, bot, remainingTime, timers, TIMER_BOT) => {
             clearTimeout(timers[phone]);
             timers[phone] = null;
         }
-        console.log(`Tiempo restante para ${phone}: ${remainingTime[phone]} ms`);
+        //console.log(`Tiempo restante para ${phone}: ${remainingTime[phone]} ms`);
     }
 };
 

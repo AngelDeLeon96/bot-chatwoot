@@ -6,7 +6,7 @@ const timers = {};
 const remainingTimes = {};
 const TIMER = process.env.TIMER ?? 100000
 const TIMER_BOT = process.env.TIMER_BOT ?? 100000
-console.log(`timer: ${TIMER / 60000} min, timer bot: ${TIMER_BOT / 60000}min`);
+//console.log(`timer: ${TIMER / 60000} min, timer bot: ${TIMER_BOT / 60000}min`);
 
 //flujo final por inactividad
 const flujoFinal = addKeyword(EVENTS.ACTION)
@@ -26,7 +26,7 @@ const startBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     // Inicia un nuevo temporizador de inactividad
     timers[ctx.from] = setTimeout(() => {
         let number = ctx.from.replace("+", "")
-        console.log(`User timeout startbot flow: ${ctx.from}`);
+        //console.log(`User timeout startbot flow: ${ctx.from}`);
         if (blacklist.checkIf(number)) {
             blacklist.remove(number)
         }
@@ -41,7 +41,7 @@ const startBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
 const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
     timers[ctx.from] = setTimeout(() => {
         let number = ctx.from.replace("+", "")
-        console.log(`User timeout: ${number}`);
+        //console.log(`User timeout: ${number}`);
         if (blacklist.checkIf(number)) {
             blacklist.remove(number)
         }
@@ -53,10 +53,10 @@ const reactivarBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
 const resumeBot = (ctx, gotoFlow) => {
     if (remainingTimes[ctx.from]) {
         timers[ctx.from] = setTimeout(() => {
-            console.log(`User timeout: ${ctx.from}`);
+            //console.log(`User timeout: ${ctx.from}`);
             gotoFlow(flujoFinal);
         }, remainingTimes[ctx.from]);
-        console.log(`User resumed: ${ctx.from}, remaining time: ${remainingTimes[ctx.from]}`);
+        //console.log(`User resumed: ${ctx.from}, remaining time: ${remainingTimes[ctx.from]}`);
     }
 }
 
@@ -72,7 +72,7 @@ const pauseBot = (ctx) => {
         clearTimeout(timers[ctx.from]);
         timers[ctx.from] = null;
 
-        console.log(`User paused: ${ctx.from}, remaining time: ${elapsedTime}`);
+        //console.log(`User paused: ${ctx.from}, remaining time: ${elapsedTime}`);
         return elapsedTime
     }
 }
@@ -80,7 +80,7 @@ const pauseBot = (ctx) => {
 // Función para iniciar el temporizador de inactividad para un usuario
 const start = (ctx, gotoFlow, ms = TIMER) => {
     timers[ctx.from] = setTimeout(() => {
-        console.log(`User timeout: ${ctx.from}`);
+        //console.log(`User timeout: ${ctx.from}`);
         return gotoFlow(flujoFinal);
     }, ms);
 }
@@ -105,7 +105,7 @@ const stop = (ctx) => {
 //
 const stopBot = (ctx) => {
     if (timers[ctx.from]) {
-        console.log(`stopped countdown for the user: ${ctx.from}`);
+        //console.log(`stopped countdown for the user: ${ctx.from}`);
         clearTimeout(timers[ctx.from]);
     }
 }
