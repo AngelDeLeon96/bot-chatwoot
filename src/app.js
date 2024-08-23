@@ -1,25 +1,20 @@
 
 import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@builderbot/bot'
-import fs from 'fs/promises';
-import path from 'path';
 import { MemoryDB as Database } from '@builderbot/bot'
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
-import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import ServerHttp from './http/server.js';
-import { sendMessageChatwood, recover, createConversationChatwood, clearCache } from './services/chatwood.js'
+import { sendMessageChatwood, recover } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop } from './utils/timer.js'
 //flows
-import { flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow, flowAddTime } from './flows/agents.js'
+import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow } from './flows/agents.js'
 import { primera_vez, prima_menu, attach_forms, attach_forms_continuidad } from './flows/prima.js';
-
-
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
-
-
-import { catch_error, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB } from './utils/utils.js';
+import { catch_error, esHorarioLaboral, getMimeWB, saveMediaWB } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
+import logger from './utils/logger.js';
+
 const queue = new Queue({
     concurrent: 1,
     interval: 500
@@ -58,7 +53,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
         reset(ctx, gotoFlow);
         await state.update({ consulta: ctx.body });
         let typeMSG = getMimeWB(ctx.message)
-        console.log(typeMSG);
+        //console.log(typeMSG);
         await state.update({ status: typeMSG });
 
         if (typeMSG !== "senderKeyDistributionMessage") {
@@ -67,14 +62,14 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     })
     .addAction(async (ctx, { fallBack, gotoFlow, globalState, state }) => {
         stop(ctx);
-        console.log(state.get('typeMSG'));
+        //console.log(state.get('typeMSG'));
         sendMessageChatwood(`${showMSG('selected')} ${state.get('consulta')}`, 'incoming', globalState.get('conversation_id'));
         switch (parseInt(ctx.body)) {
             case 1:
-                console.log('prima menu');
+                //console.log('prima menu');
                 return gotoFlow(prima_menu);
             case 2:
-                console.log('vacaciones');
+                //console.log('vacaciones');
                 return gotoFlow(freeFlow);
             case 3:
                 return gotoFlow(flowMsgFinal);
@@ -120,13 +115,13 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
 //flow principal
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAction(async (ctx, { endFlow, blacklist }) => {
-        console.log('<======>', blacklist.checkIf(ctx.from.replace('+', '')))
+        //console.log('<======>', blacklist.checkIf(ctx.from.replace('+', '')))
         const now = new Date();
         if (!esHorarioLaboral(now)) {
             return endFlow(showMSG('fuera_laboral'))
         } else {
             if (blacklist.checkIf(ctx.from.replace('+', ''))) {
-                console.log('user blocked')
+                //console.log('user blocked')
                 return endFlow()
             }
         }
@@ -134,7 +129,6 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAnswer(showMSG('bienvenida'), async (ctx, { globalState, gotoFlow, endFlow }) => {
         try {
             const user_data = await recover(ctx.from);
-            console.log('1. soy welcome flow', user_data)
             if (user_data != null) {
                 //set las variables con los datos del usuario como su: id y id de conversation
                 await globalState.update({ conversation_id: user_data.conversation_id });
@@ -143,7 +137,8 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
                     return gotoFlow(registerMsgConversation);
                 } else {
-                    console.log('user not found...');
+                    logger.warn('not found.', { 'user': ctx.from })
+                    //console.log('user or chat not found...');
                 }
             }
             else {
@@ -160,7 +155,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, primera_vez]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow]);
     const adapterProvider = createProvider(Provider, {
         experimentalSyncMessage: 'Ups vuelvelo a intentar',
     });
@@ -189,13 +184,13 @@ const main = async () => {
             //console.log(`payload: `, JSON.stringify(payload), '\n')
             let debounceSendMSG = debounce(sendMessageChatwood, 100);
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
-                console.log(JSON.stringify('free mode'))
+                //console.log(JSON.stringify('free mode'))
                 queue.enqueue(async () => {
                     let [msg, attachment] = await saveMediaWB(payload)
                     const daata = await recover(payload.from);
                     const conversation_id = daata.conversation_id;
                     if (conversation_id != 0) {
-                        console.log('debounce')
+                        //console.log('debounce')
                         debounceSendMSG(msg, 'incoming', conversation_id, attachment);
                     }
                 });
@@ -217,7 +212,6 @@ const main = async () => {
                     //console.log('msg send to chatwoot...🚀')
                     sendMessageChatwood(answer, 'outgoing', conversation_id);
                 });
-
             }
         }
         catch (err) {
