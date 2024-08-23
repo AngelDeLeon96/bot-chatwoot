@@ -44,10 +44,10 @@ const prima_menu = addKeyword(EVENTS.ACTION)
         }
     })
 
-const primera_vez = addKeyword(EVENTS.DOCUMENT)
+const primera_vez = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`${showMSG('llenar_form')} y subalo.`, { media: path.join(process.cwd(), 'public/files', 'FGE-solicitud y declaracion CO.pdf') })
-    .addAnswer(`Por favor suba el formulario lleno y firmado en formato pdf.`, { capture: true }, async (ctx, { gotoFlow, fallBack, globalState }) => {
+    .addAnswer(`${showMSG('llenar_form')}`, { media: path.join(process.cwd(), 'public/files', 'FGE-solicitud y declaracion CO.pdf') })
+    .addAnswer(`${showMSG('subir_pdf')}`, { capture: true }, async (ctx, { fallBack, globalState }) => {
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG === "senderKeyDistributionMessage") {
             return fallBack(showMSG('no_permitida'));
@@ -63,7 +63,7 @@ const primera_vez = addKeyword(EVENTS.DOCUMENT)
 
 const attach_forms = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`${showMSG('adjuntar_form')}`, async (ctx, { provider, fallBack, globalState }) => {
+    .addAnswer(`${showMSG('adjuntar_form')}`, async (ctx, { fallBack, globalState }) => {
         reset(ctx)
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG === "senderKeyDistributionMessage") {
@@ -74,7 +74,7 @@ const attach_forms = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
     })
-    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { provider, fallBack, globalState }) => {
+    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { fallBack, globalState }) => {
         reset(ctx)
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG === "senderKeyDistributionMessage") {
@@ -93,7 +93,7 @@ const attach_forms = addKeyword(EVENTS.ACTION)
 
 const attach_forms_continuidad = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { provider, globalState, fallBack }) => {
+    .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { globalState, fallBack }) => {
         reset(ctx)
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG === "senderKeyDistributionMessage") {
