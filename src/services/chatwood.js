@@ -1,31 +1,25 @@
 import axios from 'axios';
 import { catch_error } from '../utils/utils.js';
 import { readFile } from 'fs/promises';
-import { showMSG } from '../i18n/i18n.js';
-import { LRUCache } from 'lru-cache';
+
 import { releaseLock, acquireLock } from '../utils/in-memory-lock.js';
+import logger from '../utils/logger.js';
 
 const SERVER = process.env.SERVER_DOCKER || "http://localhost";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2;
 const INBOX_ID = process.env.INBOX_ID ?? 5;
 const API = process.env.API;
 const PORT = process.env.PORT;
-
+import { getData, setCache, clearCache } from '../utils/cachefn.js';
 //console.log('server: ', SERVER, PORT);
 
-const clearCache = () => {
-    cache.clear();
-    console.log('Caché limpiado');
-};
+
 
 const builderURL = (path) => {
     return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
 }
-// Configuración del caché
-const cache = new LRUCache({
-    max: 1000, // Número máximo de elementos en caché
-    maxAge: 1000 * 60 * 60 // Tiempo de vida: 1 hora
-});
+
+
 //create
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
     try {
@@ -69,8 +63,8 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
                 const blob = new Blob([fileContent]);
                 form.set("attachments[]", blob, fileName);
             } catch (readFileError) {
-                console.error('Error al leer el archivo adjunto:', readFileError);
-                throw readFileError;
+                //console.error('Error al leer el archivo adjunto:', readFileError);
+                //throw readFileError;
             }
         }
 
@@ -84,17 +78,17 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
         if (!response.ok) {
             const textResponse = await response.text();
-            console.error('El servidor respondió con:', response.status, response.statusText);
-            console.error('Cuerpo de la respuesta:', textResponse);
-            throw new Error(`¡Error HTTP! estado: ${response.status}`);
+            //console.error('El servidor respondió con:', response.status, response.statusText);
+            //console.error('Cuerpo de la respuesta:', textResponse);
+            // new Error(`¡Error HTTP! estado: ${response.status}`);
         }
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             const textResponse = await response.text();
-            console.error('Tipo de contenido inesperado:', contentType);
-            console.error('Cuerpo de la respuesta:', textResponse);
-            throw new Error(`Se esperaba JSON, pero se recibió ${contentType}`);
+            //console.error('Tipo de contenido inesperado:', contentType);
+            //console.error('Cuerpo de la respuesta:', textResponse);
+            //throw new Error(`Se esperaba JSON, pero se recibió ${contentType}`);
         }
 
         const data = await response.json();
@@ -103,19 +97,18 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
     } catch (err) {
         catch_error(err);
-        console.error('Error en sendMessageChatwood:', err);
-        throw err; // Re-lanza el error para que el llamador pueda manejarlo
+        //console.error('Error en sendMessageChatwood:', err);
+        //throw err; // Re-lanza el error para que el llamador pueda manejarlo
     }
 };
 
 const searchUser = async (user = "") => {
     try {
-        /*
-        const cachedData = cache.get(user);
+        const cachedData = getData(user);
         if (cachedData) {
             console.log('Usando datos en caché para user:', cachedData);
             return cachedData;
-        }*/
+        }
         const url = builderURL(`contacts/search?q=${user}`)
         //console.log(url)
         let count = null
@@ -142,8 +135,7 @@ const searchUser = async (user = "") => {
         }
         //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
         data_user.count = count
-
-        //cleacacache.set(user, data_user);
+        setCache(user, data_user)
 
         return data_user;
     } catch (err) {
@@ -157,7 +149,7 @@ const recoverConversation = async (id = 0, user = "") => {
     try {
         /*const cachedData = cache.get(id);
         if (cachedData) {
-            console.log('Usando datos en caché para conversation_id:', cachedData);
+            //console.log('Usando datos en caché para conversation_id:', cachedData);
             return cachedData;
         }*/
 
@@ -214,7 +206,8 @@ const recover = async (user = {}) => {
                 //console.log('id capturado: ', conversation_id)
                 if (conversation_id === 0) {
                     const new_conv = await createConversationChatwood('', 'outgoing', user_info.user_id)
-                    console.log('Nueva conversación creada:', new_conv)
+                    //console.log('Nueva conversación creada:', new_conv)
+                    logger.info('Nueva conversación creada', { 'id': new_conv, 'user': user })
                     user_info.conversation_id = new_conv
                 } else {
                     user_info.conversation_id = conversation_id
@@ -223,37 +216,19 @@ const recover = async (user = {}) => {
                 await releaseLock(lockKey);
             }
         } else {
-            console.log('No se encontró el usuario:', user)
+            //console.log(user)
+            logger.warn('No se encontró el usuario:', { error: user })
+            //console.log('No se encontró el usuario:', user)
             return null
         }
 
         return user_info
 
     } catch (err) {
-        console.error('Error en recover:', err)
-        throw err
+        //console.error('Error en recover:', err)
+        catch_error(err)
     }
 };
 
-const checking = async (user = "") => {
-    try {
-        console.log(`searching: ${user}`, ACCOUNT_ID, SERVER, API, INBOX_ID)
-        //process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-        const res = await axios.get('http://127.0.0.1:3000/api/v1/accounts/1/contacts/search?q=+50766962147', {
-            headers: {
-                'Content-Type': 'application/json',
-                "api_access_token": API
-                // Añade otros encabezados si es necesario
-            },
-            //httpsAgent: new axios.http.Agent({ rejectUnauthorized: false })
-        });
-        console.log('fecht url', res.data)
-        //const { meta, payload } = res.data
-        return res.data;
-    }
-    catch (err) {
-        console.error(err)
-    }
-}
 
-export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover, clearCache };
+export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover };
