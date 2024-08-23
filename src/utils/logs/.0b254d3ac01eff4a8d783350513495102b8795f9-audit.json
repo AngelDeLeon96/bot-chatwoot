@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/.0b254d3ac01eff4a8d783350513495102b8795f9-audit.json",
+    "files": [
+        {
+            "date": 1724430791635,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-08-23-combined.log",
+            "hash": "3045bc2fdc80acce2f8a65a6d669d06928bc1a3469153fd19a571d2c398b36e5"
+        }
+    ],
+    "hashType": "sha256"
+}
