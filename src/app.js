@@ -158,6 +158,8 @@ const main = async () => {
     const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow]);
     const adapterProvider = createProvider(Provider, {
         experimentalSyncMessage: 'Ups vuelvelo a intentar',
+        experimentalStore: true,
+        timeRelease: 10800000, // 3 hours in milliseconds
     });
     const adapterDB = new Database();
 
