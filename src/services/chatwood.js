@@ -50,6 +50,10 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
 const sendMessageChatwood = async (msg = "", message_type = "incoming", conversation_id = 0, attachments = []) => {
     try {
+        if (!conversation_id) {
+            logger.error("ID de conversacion no válido. No se realizará la solicitud.", { id: conversation_id });
+            return null; // O podrías devolver un objeto que indique que no se realizó la solicitud
+        }
         const url = builderURL(`conversations/${conversation_id}/messages`);
         const form = new FormData();
         form.set("content", msg);
@@ -63,7 +67,7 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
                 const blob = new Blob([fileContent]);
                 form.set("attachments[]", blob, fileName);
             } catch (readFileError) {
-                //console.error('Error al leer el archivo adjunto:', readFileError);
+                logger.error('Error al leer el archivo adjunto:', readFileError);
                 //throw readFileError;
             }
         }
@@ -78,16 +82,17 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
         if (!response.ok) {
             const textResponse = await response.text();
-            //console.error('El servidor respondió con:', response.status, response.statusText);
-            //console.error('Cuerpo de la respuesta:', textResponse);
+            logger.error('El servidor respondió con:', { status_code: response.status, status: response.statusText });
+            logger.error('Cuerpo de la respuesta:', { response: textResponse });
             // new Error(`¡Error HTTP! estado: ${response.status}`);
         }
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             const textResponse = await response.text();
-            //console.error('Tipo de contenido inesperado:', contentType);
-            //console.error('Cuerpo de la respuesta:', textResponse);
+            logger.error('Tipo de contenido inesperado:', { type: contentType });
+
+            logger.error('Cuerpo de la respuesta:', { response: textResponse });
             //throw new Error(`Se esperaba JSON, pero se recibió ${contentType}`);
         }
 
@@ -97,7 +102,7 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
     } catch (err) {
         catch_error(err);
-        //console.error('Error en sendMessageChatwood:', err);
+        logger.error('Error en sendMessageChatwood:', { error: err });
         //throw err; // Re-lanza el error para que el llamador pueda manejarlo
     }
 };
@@ -106,7 +111,7 @@ const searchUser = async (user = "") => {
     try {
         const cachedData = getData(user);
         if (cachedData) {
-            console.log('Usando datos en caché para user:', cachedData);
+            logger.info('Usando datos en caché para user:', { info: cachedData });
             return cachedData;
         }
         const url = builderURL(`contacts/search?q=${user}`)
@@ -225,7 +230,7 @@ const recover = async (user = {}) => {
         return user_info
 
     } catch (err) {
-        //console.error('Error en recover:', err)
+        logger.error('Error en recover:', { error: err })
         catch_error(err)
     }
 };
