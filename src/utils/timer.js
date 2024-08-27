@@ -1,6 +1,6 @@
 import { addKeyword, EVENTS } from '@builderbot/bot'
 import { showMSG } from '../i18n/i18n.js';
-import { flowAddTime } from '../flows/agents.js';
+import { flowAddTime, flowMsgFinal } from '../flows/agents.js';
 // Objeto para almacenar los temporizadores para cada usuario
 const timers = {};
 const remainingTimes = {};
@@ -30,7 +30,7 @@ const startBot = (ctx, gotoFlow, endFlow, blacklist, ms = TIMER_BOT) => {
         if (blacklist.checkIf(number)) {
             blacklist.remove(number)
         }
-        return gotoFlow(flowAddTime);
+        return gotoFlow(flowMsgFinal);
     }, ms);
 
     // Almacena el tiempo restante
@@ -79,6 +79,7 @@ const pauseBot = (ctx) => {
 
 // Función para iniciar el temporizador de inactividad para un usuario
 const start = (ctx, gotoFlow, ms = TIMER) => {
+    console.log(gotoFlow, ms);
     timers[ctx.from] = setTimeout(() => {
         //console.log(`User timeout: ${ctx.from}`);
         return gotoFlow(flujoFinal);
