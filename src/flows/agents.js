@@ -70,12 +70,11 @@ const freeFlow = addKeyword(EVENTS.ACTION)
     .addAnswer(`${showMSG('connected')} ${process.env.TIMER_BOT / 60000} minutos.`, async (ctx, { globalState, blacklist }) => {
         //sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
-        let check = blacklist.checkIf(number)
+        let check_num = blacklist.checkIf(number)
         //console.log(number, check)
-        if (!check) {
+        if (!check_num) {
             //console.log(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
             blacklist.add(number)
-
             return
         }
         //console.log(number, check)
