@@ -2,6 +2,7 @@ import { addKeyword } from '@builderbot/bot';
 import fs from 'fs';
 import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
+
 import logger from './logger.js'
 const ADMIN_NUMBER = process.env.ADMIN_NUMBER
 
@@ -58,8 +59,10 @@ const verificarOCrearCarpeta = (ruta) => {
                 // La carpeta no existe, crearla
                 fs.mkdir(ruta, { recursive: true }, (err) => {
                     if (err) {
+                        logger.error('Error al crear la carpeta: ', { error: err })
                         reject('Error al crear la carpeta: ' + err);
                     } else {
+                        logger.error('Carpeta creada correctamente')
                         resolve('Carpeta creada correctamente.');
                     }
                 });
@@ -82,8 +85,7 @@ const esHorarioLaboral = (fecha) => {
     const horaActual = fecha.getHours();
     const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
     const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
-    //console.log(esDiaLaboral, esHoraLaboral)
-    //console.log(hora_inicio, hora_salida, horaActual)
+
     return esHoraLaboral && esDiaLaboral ? true : false
 }
 
@@ -104,39 +106,34 @@ const getMimeWB = (messages) => {
     return null;
 }
 const saveMediaWB = async (payload) => {
+    const fecha = new Date();
     let attachment = [];
     let caption = "";
     let msg = "";
-    const mime = payload?.message?.imageMessage?.mimetype ??
-        payload?.message?.videoMessage?.mimetype ??
-        payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.mimetype ??
-        payload?.message?.audioMessage?.mimetype;
-    //console.log('mensaje capturado con el provider: ');
+    const mime = findMimeType(payload);
+
+    console.log('mensaje capturado con el provider: ',);
     if (payload?.body.includes('_event_') || mime) {
         const mimeType = mime.split("/")[0];
-
+        console.log('saveMedia', mime);
         if (mimeType !== 'audio' && mimeType !== 'video') {
             //console.log('Procesando archivo no audio/video', JSON.stringify(payload.body));
             const extension = getExtensionFromMime(mime);
-
-            if (mimeType === 'image') {
-                caption = payload?.message?.imageMessage?.caption;
-            } else {
-                caption = payload?.message?.documentWithCaptionMessage?.message?.documentMessage?.caption;
-            }
+            caption = findCaption(payload)
             try {
                 msg = caption || "Archivo adjunto sin mensaje";
-                let [nombre, extension2] = msg.includes('.')
-                    ? msg.split(/\.(?=[^.]+$)/)
-                    : [msg.replace(/ /g, '_'), null];
+                console.log('caption', caption, msg)
+                const [nombre, extension2] = procesarNombreArchivo(msg);
+
                 let filename = nombre.toLocaleLowerCase() || 'file';
                 const buffer = await downloadMediaMessage(payload, "buffer");
-                const fileName = `${filename}_${Date.now()}.${extension}`;
-                const docsDir = `${process.cwd()}/public/docs`;
+                const fileName = `${payload.from}_${filename}_${Date.now()}.${extension}`;
+                const docsDir = `${process.cwd()}/public/docs/${fecha.getFullYear()}/${fecha.getMonth()}`;
                 await verificarOCrearCarpeta(docsDir);
                 const pathFile = `${docsDir}/${fileName}`;
                 //console.log(pathFile)
-                fs.promises.writeFile(pathFile, buffer);
+                const saved = await fs.promises.writeFile(pathFile, buffer);
+                //console.log('Archivo guardado correctamente en:', pathFile, saved);
                 attachment.push(pathFile);
             } catch (error) {
                 logger.error('Error al procesar el archivo:', { 'error': error })
@@ -155,4 +152,67 @@ const saveMediaWB = async (payload) => {
     return [msg, attachment]
 }
 
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB };
+const procesarNombreArchivo = (msg) => {
+    // Primero, dividimos el nombre y la extensión (si existe)
+    const lastDotIndex = msg.lastIndexOf('.');
+    let nombre, extension;
+
+    if (lastDotIndex !== -1) {
+        nombre = msg.slice(0, lastDotIndex);
+        extension = msg.slice(lastDotIndex + 1);
+    } else {
+        nombre = msg;
+        extension = null;
+    }
+
+    // Reemplazamos espacios por guiones bajos en el nombre
+    nombre = nombre.replace(/ /g, '_');
+
+    return [nombre, extension];
+};
+
+const extractMimeWb = (payload) => {
+    const mime = findMimeType(payload);
+    let extracted_mime = mime ? getExtensionFromMime(mime) : null;
+    //console.log('mime type: ', mime, extracted_mime);
+    return extracted_mime;
+};
+
+const findMimeType = (obj) => {
+    if (typeof obj !== 'object' || obj === null) {
+        return null;
+    }
+
+    if (obj.mimetype) {
+        return obj.mimetype;
+    }
+
+    for (let key in obj) {
+        const result = findMimeType(obj[key]);
+        if (result) {
+            return result;
+        }
+    }
+
+    return null;
+};
+
+const findCaption = (obj) => {
+    if (typeof obj !== 'object' || obj === null) {
+        return null;
+    }
+
+    if (obj.caption) {
+        return obj.caption;
+    }
+
+    for (let key in obj) {
+        const result = findCaption(obj[key]);
+        if (result) {
+            return result;
+        }
+    }
+
+    return null;
+}
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb };
