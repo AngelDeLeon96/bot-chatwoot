@@ -1,30 +1,31 @@
-// detector-palabras-ofensivas.js
+import path from 'path';
+import fs from 'fs/promises';
+const umbralPorDefecto = 2;
+const DICCIONARIO_PATH = path.join(process.cwd(), 'src/utils/detector/bads_words.json');
+console.log(DICCIONARIO_PATH)
 
-const palabrasProhibidasPorDefecto = {
-    'xuxa': 5,
-    'chucha': 5,
-    'puta': 3,
-    'hp': 2,
-    'jodete': 4,
-    'verga': 5,
-    'perra': 6,
-    'imbecil': 3,
-    'retrasada': 5,
 
-    // Añade más palabras y sus puntajes
-};
+async function cargarDiccionario() {
+    try {
+        const data = await fs.readFile(DICCIONARIO_PATH, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error al cargar el diccionario:', error);
+        return {};
+    }
+}
 
-const umbralPorDefecto = 5;
+
 
 function limpiarTexto(texto) {
     return texto.toLowerCase().replace(/[^a-z0-9\s]/g, '');
 }
 
-export function crearDetectorPalabrasOfensivas(
-    palabrasProhibidas = palabrasProhibidasPorDefecto,
-    umbral = umbralPorDefecto
-) {
-    return function detectarOfensas(mensaje) {
+export async function crearDetectorPalabrasOfensivas(umbral = umbralPorDefecto) {
+    let diccionario = await cargarDiccionario();
+    //console.log(diccionario);
+
+    const detector = async function detectarOfensas(mensaje) {
         const mensajeLimpio = limpiarTexto(mensaje);
         const palabras = mensajeLimpio.split(/\s+/);
 
@@ -32,17 +33,30 @@ export function crearDetectorPalabrasOfensivas(
         const palabrasDetectadas = [];
 
         for (const palabra of palabras) {
-            if (Object.prototype.hasOwnProperty.call(palabrasProhibidas, palabra)) {
-                puntajeTotal += palabrasProhibidas[palabra];
+            if (Object.prototype.hasOwnProperty.call(diccionario, palabra)) {
+                puntajeTotal += diccionario[palabra];
                 palabrasDetectadas.push(palabra);
             }
         }
 
-        const esOfensivo = puntajeTotal >= umbral;
-
-        return { esOfensivo, puntajeTotal, palabrasDetectadas };
+        const esOfensivo = puntajeTotal > umbral;
+        const mensajeEtiquetado = esOfensivo
+            ? `Posibles faltas de respeto en el siguiente mensaje: ${mensaje}`
+            : mensaje;
+        console.log('res')
+        return {
+            esOfensivo,
+            puntajeTotal,
+            palabrasDetectadas,
+            mensajeOriginal: mensaje,
+            mensajeEtiquetado
+        };
     };
+
+    return detector;
 }
+
+
 
 // Ejemplo de uso (puedes incluirlo en un archivo separado):
 /*
