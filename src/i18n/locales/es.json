@@ -1,7 +1,7 @@
 {
 	"reiniciar_bot": "Si desea volverse a comunicar, escriba: hola, para volver a hablar con el bot.",
 	"desea_comunicarse": "Desea comunicarse con un agente?",
-	"connected": "Uno de nuestros agentes se estará comunicando, por favor espere. Esta sesión tiene una duración limitada de",
+	"connected": "Por favor espere, uno de nuestros agentes se estará comunicando con usted. Esta sesión tiene una duración limitada de",
 	"solicitar_nombre": "Por favor, indíqueme su nombre completo.",
 	"solicitar_cedula": "Por favor, indíqueme su número de cédula.",
 	"solicitar_consulta": "¿Cuál sería el motivo de su consulta?",
@@ -29,10 +29,16 @@
 	"salir": "3. Salir",
 	"opcion_invalida": "Opción invalida. Intente Nuevamente...",
 	"formulario_captado": "Confirmación de recepción: Su formulario ha sido recibido y registrado en nuestro sistema.",
-	"adjuntar_cedula": "Adjuntar copia de cédula en formato PDF.",
-	"adjuntar_form": "Adjuntar formulario en formato PDF.",
+	"adjuntar_cedula": "Por favor, adjunte copia de su cédula en formato PDF.",
+	"adjuntar_form": "Por favor, adjunte el formulario de solicitud completado en formato PDF.",
 	"adjuntar_continuidad": "Por favor, adjunte las certificaciones de continuidad laboral emitidas por otras instituciones, si las tiene.",
 	"menu": "Menú de opciones:",
 	"selected": "Selecciono: ",
-	"subir_pdf":"Una vez completado y firmado, por favor suba el formulario en formato PDF."
+	"subir_pdf":"Una vez completado y firmado, por favor suba el formulario en formato PDF. Utilice la opción 2 para adjuntar los documentos.",
+	"exit":"Salir",
+	"prima_opcion_1":"1. Solicitud por primera vez.",
+	"prima_opcion_2":"2. Adjuntar formulario de solictud y copia de cédula.",
+	"prima_opcion_3":"3. (Opcional)Adjuntar de certificaciones de continuidad de otras instituciones.",
+	"prima_opcion_4":"4. Consulta del trámite en curso (hablar con un agente).",
+	"try_again":"Intente nuevamente."
 }
