@@ -14,6 +14,7 @@ import { catch_error, esHorarioLaboral, getMimeWB, saveMediaWB } from './utils/u
 import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
 import logger from './utils/logger.js';
+import { crearDetectorPalabrasOfensivas } from './utils/detector-words.js';
 
 const queue = new Queue({
     concurrent: 1,
@@ -74,7 +75,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             case 3:
                 return gotoFlow(flowMsgFinal);
             default:
-                return fallBack();
+                return fallBack(showMSG('opcion_invalida'));
         }
     })
 
@@ -189,18 +190,29 @@ const main = async () => {
                 //console.log(JSON.stringify('free mode'))
                 queue.enqueue(async () => {
                     let [msg, attachment] = await saveMediaWB(payload)
+                    const detector = await crearDetectorPalabrasOfensivas()
+                    const result = await detector(msg)
+                    //console.log('reslt ', result)
+
                     const daata = await recover(payload.from);
                     const conversation_id = daata.conversation_id;
-                    if (conversation_id != 0) {
+
+                    if (conversation_id > 0) {
                         //console.log('debounce')
+                        msg = result.mensajeEtiquetado
                         debounceSendMSG(msg, 'incoming', conversation_id, attachment);
+
+                        if (result.puntajeTotal >= 2) {
+                            console.log('send warning...')
+                            adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {})
+                        }
                     }
                 });
             }
         }
         catch (err) {
             catch_error(err);
-            //console.error('ERROR', err)
+            console.error('ERROR', err)
         }
     });
 
@@ -213,6 +225,7 @@ const main = async () => {
                 queue.enqueue(async () => {
                     //console.log('msg send to chatwoot...🚀')
                     sendMessageChatwood(answer, 'outgoing', conversation_id);
+                    await bot.sendMessage(from, 'jjj', {})
                 });
             }
         }
