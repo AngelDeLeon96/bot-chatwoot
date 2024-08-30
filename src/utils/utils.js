@@ -197,6 +197,28 @@ const findMimeType = (obj) => {
     return null;
 };
 
+const findMyData = (obj, keyToLook) => {
+    // Si obj no es un objeto o es null, retornamos null
+    if (typeof obj !== 'object' || obj === null) {
+        return null;
+    }
+    // Si la clave buscada existe directamente en el objeto, retornamos su valor
+    if (keyToLook in obj) {
+        return obj[keyToLook];
+    }
+
+    // Buscamos recursivamente en las propiedades del objeto
+    for (let key in obj) {
+        const result = findMyData(obj[key], keyToLook);
+        if (result !== null) {
+            return result;
+        }
+    }
+    console.log(`No se encontró la clave ${keyToLook} en el objeto ${Date.now()}`)
+    // Si no se encuentra la clave, retornamos null
+    return null;
+}
+
 const findCaption = (obj) => {
     if (typeof obj !== 'object' || obj === null) {
         return null;
@@ -215,4 +237,4 @@ const findCaption = (obj) => {
 
     return null;
 }
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb };
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData };
