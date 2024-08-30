@@ -79,7 +79,7 @@ const pauseBot = (ctx) => {
 
 // Función para iniciar el temporizador de inactividad para un usuario
 const start = (ctx, gotoFlow, ms = TIMER) => {
-    console.log(gotoFlow, ms);
+    //console.log(gotoFlow, ms);
     timers[ctx.from] = setTimeout(() => {
         //console.log(`User timeout: ${ctx.from}`);
         return gotoFlow(flujoFinal);
