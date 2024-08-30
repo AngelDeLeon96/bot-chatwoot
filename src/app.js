@@ -203,7 +203,7 @@ const main = async () => {
                         debounceSendMSG(msg, 'incoming', conversation_id, attachment);
 
                         if (result.puntajeTotal >= 2) {
-                            console.log('send warning...')
+                            logger.info('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from })
                             adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {})
                         }
                     }
