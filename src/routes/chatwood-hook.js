@@ -1,16 +1,20 @@
 import express from 'express';
-import { catch_error } from '../utils/utils.js';
+import { catch_error, findMyData } from '../utils/utils.js';
 const router = express.Router();
 const TIMER_BOT = process.env.TIMER_BOT ?? 600000
 import { timers } from '../utils/timer.js';
+import logger from '../utils/logger.js';
 // Enviar mensaje a usuario de WhatsApp
 //console.log(TIMER_BOT / 60000)
 const chatWoodHook = async (req, res) => {
     try {
+        //console.log('chatWoodHook:', req.body);
         const providerWS = req.providerWS;
         const bot = req.bot;
         const body = req.body;
-        const mapperAttributes = body?.conversation?.meta?.assignee;
+        //const mapperAttributes = body?.conversation?.meta?.assignee;
+        const mapperAttributes = findMyData(body, 'assignee');
+
         const attachments = body?.attachments;
         const phone = body.conversation?.meta?.sender?.phone_number.replace('+', '');
         const content = body.content;
@@ -43,7 +47,7 @@ const chatWoodHook = async (req, res) => {
             if (body?.event === 'message_created' && Object.hasOwn(mapperAttributes, 'id')) {
                 const idAssigned = mapperAttributes.id ?? true
                 //const idAssigned = true
-                //console.log('idAssigned: ', idAssigned)
+                console.log('idAssigned: ', idAssigned)
                 if (idAssigned) {
                     //console.log(`${phone} blocked...`)
                     if (!bot.dynamicBlacklist.checkIf(phone) && !timers[phone]) {
@@ -60,24 +64,25 @@ const chatWoodHook = async (req, res) => {
             }
             //envia los docs al whatsapp
             if (file) {
-                //console.log(file.data_url)
-                const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
+                console.log(file.data_url)
+                //const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
+                const fileURL = file.data_url
                 await providerWS.sendMedia(`${phone}@c.us`, fileURL, content)
-                res.send('ok')
+                //res.send('ok')
                 return
             }
             /*esto envia un mensaje de texto al whatsapp de usuario*/
             await providerWS.sendMessage(`${phone}`, body.content, {});
-            res.send('ok');
+            //res.send('ok');
             //console.log('=>OK')
             return;
         }
-
         //res.send(body)
         res.send('ok')
     }
     catch (err) {
         catch_error(err)
+        logger.error(`Error in chatWoodHook: ${err.message}`, { stack: err.stack, error: err.message });
     }
 
 };
