@@ -2,8 +2,6 @@ import path from 'path';
 import fs from 'fs/promises';
 const umbralPorDefecto = 2;
 const DICCIONARIO_PATH = path.join(process.cwd(), 'src/utils/detector/bads_words.json');
-console.log(DICCIONARIO_PATH)
-
 
 async function cargarDiccionario() {
     try {

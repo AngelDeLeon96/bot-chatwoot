@@ -74,18 +74,20 @@ const verificarOCrearCarpeta = (ruta) => {
     });
 }
 
-const esHorarioLaboral = (fecha) => {
-    const hora_inicio = process.env.H_INICIO ?? 8;
-    const hora_salida = process.env.H_SALIDA ?? 16;
-
-    const inicio_semana = process.env.S_LABORAL_INICIO ?? 1
-    const final_semana = process.env.S_LABORAL_FINAL ?? 5
-
+const esHorarioLaboral = () => {
+    const fecha = new Date();
+    const hora_inicio = Number(process.env.H_INICIO ?? 8);
+    const hora_salida = Number(process.env.H_SALIDA ?? 16);
+    const inicio_semana = Number(process.env.S_LABORAL_INICIO ?? 1);
+    const final_semana = Number(process.env.S_LABORAL_FINAL ?? 5);
     const diaActual = fecha.getDay();
     const horaActual = fecha.getHours();
+    //console.log(`dia de la semana: ${diaActual}, hora actual${horaActual}`)
     const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
     const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
-
+    //console.log('es hora laboral y dia', esHoraLaboral, esDiaLaboral)
+    //console.log('Configuración:', { hora_inicio, hora_salida, inicio_semana, final_semana });
+    //console.log('Fecha actual:', fecha.toString());
     return esHoraLaboral && esDiaLaboral ? true : false
 }
 
@@ -123,7 +125,7 @@ const saveMediaWB = async (payload) => {
             try {
                 msg = caption || "Archivo adjunto sin mensaje";
                 console.log('caption', caption, msg)
-                const [nombre, extension2] = procesarNombreArchivo(msg);
+                const nombre = procesarNombreArchivo(msg);
 
                 let filename = nombre.toLocaleLowerCase() || 'file';
                 const buffer = await downloadMediaMessage(payload, "buffer");
@@ -132,7 +134,7 @@ const saveMediaWB = async (payload) => {
                 await verificarOCrearCarpeta(docsDir);
                 const pathFile = `${docsDir}/${fileName}`;
                 //console.log(pathFile)
-                const saved = await fs.promises.writeFile(pathFile, buffer);
+                await fs.promises.writeFile(pathFile, buffer);
                 //console.log('Archivo guardado correctamente en:', pathFile, saved);
                 attachment.push(pathFile);
             } catch (error) {
@@ -155,20 +157,20 @@ const saveMediaWB = async (payload) => {
 const procesarNombreArchivo = (msg) => {
     // Primero, dividimos el nombre y la extensión (si existe)
     const lastDotIndex = msg.lastIndexOf('.');
-    let nombre, extension;
+    let nombre;
 
     if (lastDotIndex !== -1) {
         nombre = msg.slice(0, lastDotIndex);
-        extension = msg.slice(lastDotIndex + 1);
+        //extension = msg.slice(lastDotIndex + 1);
     } else {
         nombre = msg;
-        extension = null;
+        //extension = null;
     }
 
     // Reemplazamos espacios por guiones bajos en el nombre
     nombre = nombre.replace(/ /g, '_');
 
-    return [nombre, extension];
+    return nombre;
 };
 
 const extractMimeWb = (payload) => {
@@ -214,7 +216,7 @@ const findMyData = (obj, keyToLook) => {
             return result;
         }
     }
-    console.log(`No se encontró la clave ${keyToLook} en el objeto ${Date.now()}`)
+    //logger.info(`No se encontró la clave ${keyToLook} en el objeto ${Date.now()}`)
     // Si no se encuentra la clave, retornamos null
     return null;
 }

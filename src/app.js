@@ -50,7 +50,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(state.get('cedula'), 'incoming', globalState.get('conversation_id'));
         }
     })
-    .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, globalState, fallBack }) => {
+    .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ consulta: ctx.body });
         let typeMSG = getMimeWB(ctx.message)
@@ -116,10 +116,8 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
 //flow principal
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAction(async (ctx, { endFlow, blacklist }) => {
-        //console.log('<======>', blacklist.checkIf(ctx.from.replace('+', '')))
-        const now = new Date();
-        if (!esHorarioLaboral(now)) {
-            return endFlow(showMSG('fuera_laboral'))
+        if (!esHorarioLaboral()) {
+            return endFlow(`${showMSG('fuera_laboral')}`)
         } else {
             if (blacklist.checkIf(ctx.from.replace('+', ''))) {
                 //console.log('user blocked')
@@ -127,7 +125,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
             }
         }
     })
-    .addAnswer(showMSG('bienvenida'), async (ctx, { globalState, gotoFlow, endFlow }) => {
+    .addAnswer(showMSG('bienvenida'), async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
             if (user_data != null) {
@@ -158,7 +156,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow]);
     const adapterProvider = createProvider(Provider, {
-        experimentalSyncMessage: 'Ups vuelvelo a intentar',
+        experimentalSyncMessage: 'Algo salio mal, intenta nuevamente...',
         experimentalStore: true,
         timeRelease: 10800000, // 3 hours in milliseconds
     });
