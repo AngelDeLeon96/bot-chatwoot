@@ -156,7 +156,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow]);
     const adapterProvider = createProvider(Provider, {
-        experimentalSyncMessage: 'Algo salio mal, intenta nuevamente...',
+        experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
         experimentalStore: true,
         timeRelease: 10800000, // 3 hours in milliseconds
     });
@@ -201,7 +201,7 @@ const main = async () => {
                         debounceSendMSG(msg, 'incoming', conversation_id, attachment);
 
                         if (result.puntajeTotal >= 2) {
-                            logger.info('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from })
+                            logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from })
                             adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {})
                         }
                     }

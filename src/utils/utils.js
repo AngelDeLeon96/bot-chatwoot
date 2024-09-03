@@ -19,7 +19,7 @@ const catch_error = (error) => {
         }
     } else if (error.request) {
         // La solicitud fue hecha pero no se recibió respuesta
-        logger.info('No se recibió respuesta del servidor.', { 'error': error })
+        logger.error('No se recibió respuesta del servidor.', { 'error': error })
         //console.log('No se recibió respuesta del servidor.');
     } else {
         // Algo pasó al configurar la solicitud que lanzó un error
@@ -82,7 +82,7 @@ const esHorarioLaboral = () => {
     const final_semana = Number(process.env.S_LABORAL_FINAL ?? 5);
     const diaActual = fecha.getDay();
     const horaActual = fecha.getHours();
-    //console.log(`dia de la semana: ${diaActual}, hora actual${horaActual}`)
+    console.log(`dia de la semana: ${diaActual}, hora actual${fecha.toString()} `)
     const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
     const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
     //console.log('es hora laboral y dia', esHoraLaboral, esDiaLaboral)

@@ -111,7 +111,7 @@ const searchUser = async (user = "") => {
     try {
         const cachedData = getData(user);
         if (cachedData) {
-            logger.info('Usando datos en caché para user:', { info: cachedData });
+            //logger.info('Usando datos en caché para user:', { info: cachedData });
             return cachedData;
         }
         const url = builderURL(`contacts/search?q=${user}`)
