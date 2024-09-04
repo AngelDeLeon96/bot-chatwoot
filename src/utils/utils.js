@@ -62,7 +62,7 @@ const verificarOCrearCarpeta = (ruta) => {
                         logger.error('Error al crear la carpeta: ', { error: err })
                         reject('Error al crear la carpeta: ' + err);
                     } else {
-                        logger.error('Carpeta creada correctamente')
+                        logger.info('Carpeta creada correctamente')
                         resolve('Carpeta creada correctamente.');
                     }
                 });
@@ -82,7 +82,7 @@ const esHorarioLaboral = () => {
     const final_semana = Number(process.env.S_LABORAL_FINAL ?? 5);
     const diaActual = fecha.getDay();
     const horaActual = fecha.getHours();
-    console.log(`dia de la semana: ${diaActual}, hora actual${fecha.toString()} `)
+    //console.log(`dia de la semana: ${diaActual}, hora actual${fecha.toString()} `)
     const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
     const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
     //console.log('es hora laboral y dia', esHoraLaboral, esDiaLaboral)
@@ -114,17 +114,17 @@ const saveMediaWB = async (payload) => {
     let msg = "";
     const mime = findMimeType(payload);
 
-    console.log('mensaje capturado con el provider: ',);
+    //console.log('mensaje capturado con el provider: ',);
     if (payload?.body.includes('_event_') || mime) {
         const mimeType = mime.split("/")[0];
-        console.log('saveMedia', mime);
+        //console.log('saveMedia', mime);
         if (mimeType !== 'audio' && mimeType !== 'video') {
             //console.log('Procesando archivo no audio/video', JSON.stringify(payload.body));
             const extension = getExtensionFromMime(mime);
             caption = findCaption(payload)
             try {
                 msg = caption || "Archivo adjunto sin mensaje";
-                console.log('caption', caption, msg)
+                //console.log('caption', caption, msg)
                 const nombre = procesarNombreArchivo(msg);
 
                 let filename = nombre.toLocaleLowerCase() || 'file';
@@ -144,6 +144,7 @@ const saveMediaWB = async (payload) => {
             }
         } else {
             //console.log('Archivo de audio o video no permitido');
+            logger.warn("El usuario intento enviar de audios, notas de voz o videos.")
             msg = "El usuario intento enviar de audios, notas de voz o videos.";
         }
     } else {

@@ -1,7 +1,7 @@
 {
 	"reiniciar_bot": "Si desea volverse a comunicar, escriba: hola, para volver a hablar con el bot.",
 	"desea_comunicarse": "Desea comunicarse con un agente?",
-	"connected": "Por favor espere, uno de nuestros agentes se estará comunicando con usted. Esta sesión tiene una duración limitada de",
+	"connected": "Por favor espere, uno de nuestros agentes se estará comunicando con usted. Esta sesión tiene una duración de",
 	"solicitar_nombre": "Por favor, indíqueme su nombre completo.",
 	"solicitar_cedula": "Por favor, indíqueme su número de cédula.",
 	"solicitar_consulta": "¿Cuál sería el motivo de su consulta?",
@@ -20,7 +20,7 @@
 	"no_permitida_voz": "No se permite el envío de notas de voz.",
 	"solicitud_agente": "Si el agente no lo solicita.",
 	"fuera_laboral": "Nuestro horario de  atención es de lunes a viernes de 8:00 am a 4:00 pm.",
-	"aumentar_tiempo": "El tiempo de comunicación ha expirado. ¿Desea reanudarlo?",
+	"aumentar_tiempo": "El tiempo de comunicación ha expirado.",
 	"usuario_respondio": "El usuario respondio:",
 	"opcion_1": "1️. para sí",
 	"opcion_2": "2️. para no",

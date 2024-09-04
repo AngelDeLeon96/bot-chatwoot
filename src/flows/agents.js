@@ -3,6 +3,7 @@ import { addKeyword, EVENTS } from '@builderbot/bot';
 import { reset, start, startBot, stop } from '../utils/timer.js';
 import { showMSG } from '../i18n/i18n.js';
 import Queue from 'queue-promise';
+import logger from '../utils/logger.js';
 const queue = new Queue({
     concurrent: 1,
     interval: 500
@@ -11,7 +12,7 @@ const queue = new Queue({
 //good bye
 const flowGoodBye = addKeyword(EVENTS.ACTION)
     .addAnswer([showMSG('gracias'), showMSG('reiniciar_bot')], async (_, { endFlow, }) => {
-        return endFlow('Trones');
+        return endFlow();
     })
 //
 const flowAddTime = addKeyword(EVENTS.ACTION)
@@ -68,12 +69,11 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 const freeFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
     .addAnswer(`${showMSG('connected')} ${process.env.TIMER_BOT / 60000} minutos.`, async (ctx, { globalState, blacklist }) => {
-        //sendMessageChatwood(showMSG('connected'), 'outgoing', globalState.get('conversation_id'))
         let number = ctx.from.replace("+", "")
         let check_num = blacklist.checkIf(number)
         //console.log(number, check)
         if (!check_num) {
-            //console.log(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
+            logger.info(`bot desactivado para: ${number} por ${(process.env.TIMER_BOT / 60000)}min.`)
             blacklist.add(number)
             return
         }
@@ -86,7 +86,7 @@ const flowDefault = addKeyword(EVENTS.ACTION)
 
 //flow salir
 const flowMsgFinal = addKeyword(EVENTS.ACTION)
-    .addAnswer(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`)
+    .addAnswer([showMSG('gracias'), showMSG('aumentar_tiempo'), showMSG('reiniciar_bot')],)
     .addAction(async (ctx, { endFlow }) => {
         stop(ctx)
         //sendMessageChatwood(MSG, 'outgoing', globalState.get('conversation_id'));
