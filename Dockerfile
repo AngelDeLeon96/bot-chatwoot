@@ -13,7 +13,11 @@ COPY package*.json pnpm-lock.yaml ./
 
 # Install git for potential dependencies
 RUN apk add --no-cache git
+RUN apk add --no-cache tzdata
 
+ENV TZ=America/Panama
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Install PM2 globally using PNPM
 RUN pnpm install pm2 -g
 

@@ -22,6 +22,11 @@ const queue = new Queue({
 });
 i18n.init();
 
+const flowtest = addKeyword('testing2552')
+    .addAction(async (ctx, { flowDynamic }) => {
+        const fecha = new Date();
+        return await flowDynamic(`La fecha es: ${fecha.toString()}`);
+    })
 //clearCache();
 
 //registramos un MSG en una conversacion
@@ -154,7 +159,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow, flowtest]);
     const adapterProvider = createProvider(Provider, {
         experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
         experimentalStore: true,
