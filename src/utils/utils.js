@@ -107,29 +107,31 @@ const getMimeWB = (messages) => {
     //console.log('Tipo de mensaje no reconocido');
     return null;
 }
+
 const saveMediaWB = async (payload) => {
     const fecha = new Date();
+    const mime_blocked = ['audio', 'video', 'webp']
+    const media_blocked = ['webp', 'gif']
     let attachment = [];
     let caption = "";
     let msg = "";
     const mime = findMimeType(payload);
-
+    let ext = null;
     //console.log('mensaje capturado con el provider: ',);
     if (payload?.body.includes('_event_') || mime) {
         const mimeType = mime.split("/")[0];
         //console.log('saveMedia', mime);
-        if (mimeType !== 'audio' && mimeType !== 'video') {
+        ext = getExtensionFromMime(mime);
+        if (!mime_blocked.includes(mimeType) || !media_blocked.includes(ext)) {
             //console.log('Procesando archivo no audio/video', JSON.stringify(payload.body));
-            const extension = getExtensionFromMime(mime);
             caption = findCaption(payload)
             try {
                 msg = caption || "Archivo adjunto sin mensaje";
                 //console.log('caption', caption, msg)
                 const nombre = procesarNombreArchivo(msg);
-
                 let filename = nombre.toLocaleLowerCase() || 'file';
                 const buffer = await downloadMediaMessage(payload, "buffer");
-                const fileName = `${payload.from}_${filename}_${Date.now()}.${extension}`;
+                const fileName = `${payload.from}_${filename}_${Date.now()}.${ext}`;
                 const docsDir = `${process.cwd()}/public/docs/${fecha.getFullYear()}/${fecha.getMonth()}`;
                 await verificarOCrearCarpeta(docsDir);
                 const pathFile = `${docsDir}/${fileName}`;
@@ -240,4 +242,11 @@ const findCaption = (obj) => {
 
     return null;
 }
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData };
+
+const break_flow = (content) => {
+    const keywords = ['hasta luego', 'adios', 'resuelto'];
+
+    let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
+    return partial;
+}
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData, break_flow };
