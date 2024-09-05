@@ -39,7 +39,7 @@ const prima_menu = addKeyword(EVENTS.ACTION)
                 return endFlow(`${showMSG('gracias')} ${showMSG('reiniciar_bot')}`);
             default:
                 reset(ctx)
-                return fallBack();
+                return fallBack(showMSG('opcion_invalida'));
         }
     })
 
