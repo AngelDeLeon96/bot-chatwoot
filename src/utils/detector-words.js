@@ -41,7 +41,7 @@ export async function crearDetectorPalabrasOfensivas(umbral = umbralPorDefecto) 
         const mensajeEtiquetado = esOfensivo
             ? `Posibles faltas de respeto en el siguiente mensaje: ${mensaje}`
             : mensaje;
-        console.log('res')
+
         return {
             esOfensivo,
             puntajeTotal,
