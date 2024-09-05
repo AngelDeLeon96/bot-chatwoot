@@ -6,14 +6,10 @@ services:
       - 5555:5555
     volumes:
       - ./bot_sessions:/app/bot_sessions:rw
-      - ./data/logs:/app/utils/logs:rw
-      - /etc/localtime:/etc/localtime:ro  # Monta la zona horaria del host
-      - /etc/timezone:/etc/timezone:ro    # Monta la configuración de zona horaria del host
+      - ./logs:/app/src/utils/logs:rw
     env_file: .env
     environment:
       - TZ=America/Panama
-    cap_add: 
-      - SYS_ADMIN
     restart: always
     networks:
       - chat_default
@@ -21,7 +17,7 @@ services:
 
 volumes:
   bot_sessions:
-  data:
+  logs:
 
 networks:
   chat_default:
