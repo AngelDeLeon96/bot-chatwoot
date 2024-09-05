@@ -53,19 +53,3 @@ export async function crearDetectorPalabrasOfensivas(umbral = umbralPorDefecto) 
 
     return detector;
 }
-
-
-
-// Ejemplo de uso (puedes incluirlo en un archivo separado):
-/*
-import { crearDetectorPalabrasOfensivas } from './detector-palabras-ofensivas.js';
-
-const detectarOfensas = crearDetectorPalabrasOfensivas();
-
-const mensajeUsuario = "Eres un gran insulto1 y también un insulto2";
-const resultado = detectarOfensas(mensajeUsuario);
-
-console.log(`¿Es ofensivo?: ${resultado.esOfensivo}`);
-console.log(`Puntaje de ofensa: ${resultado.puntajeTotal}`);
-console.log(`Palabras ofensivas detectadas: ${resultado.palabrasDetectadas.join(', ')}`);
-*/
