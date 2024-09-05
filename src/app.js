@@ -192,22 +192,20 @@ const main = async () => {
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
                 //console.log(JSON.stringify('free mode'))
                 queue.enqueue(async () => {
-                    let [msg, attachment] = await saveMediaWB(payload)
-                    const detector = await crearDetectorPalabrasOfensivas()
-                    const result = await detector(msg)
-                    //console.log('reslt ', result)
-
+                    let [msg, attachment] = await saveMediaWB(payload);
+                    const detector = await crearDetectorPalabrasOfensivas();
+                    const result = await detector(msg);
                     const daata = await recover(payload.from);
                     const conversation_id = daata.conversation_id;
 
                     if (conversation_id > 0) {
                         //console.log('debounce')
-                        msg = result.mensajeEtiquetado
+                        msg = result.mensajeEtiquetado;
                         debounceSendMSG(msg, 'incoming', conversation_id, attachment);
 
                         if (result.puntajeTotal >= 2) {
-                            logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from })
-                            adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {})
+                            logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from });
+                            adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {});
                         }
                     }
                 });
@@ -228,7 +226,7 @@ const main = async () => {
                 queue.enqueue(async () => {
                     //console.log('msg send to chatwoot...🚀')
                     sendMessageChatwood(answer, 'outgoing', conversation_id);
-                    await bot.sendMessage(from, 'jjj', {})
+                    await bot.sendMessage(from, 'jjj', {});
                 });
             }
         }
