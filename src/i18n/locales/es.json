@@ -14,12 +14,12 @@
 	"agente_comunicara": "Un agente se estará comunicando con usted a este número.",
 	"llenar_form": "Por favor, descargue y rellene el siguiente formulario.",
 	"error_generico": "Se produjo un error, intente nuevamente!",
-	"inactividad": "Hemos procedido con la cancelación debido a inactividad.",
+	"inactividad": "No obtuvimos respuesta, por ello damos finalizada la conversación.",
 	"bot_reactivated": "Hemos reactivado el bot para usted, ya que se ha cumplido el tiempo de actividad.",
 	"no_permitida": "Datos incorrectos. Por favor, llenar los datos solicitados.",
 	"no_permitida_voz": "No se permite el envío de notas de voz.",
 	"solicitud_agente": "Si el agente no lo solicita.",
-	"fuera_laboral": "Nuestro horario de  atención es de lunes a viernes de 8:00 am a 4:00 pm.",
+	"fuera_laboral": "Nuestro horario de atención es de Lunes a Viernes de 8:00 am a 4:00 pm.",
 	"aumentar_tiempo": "El tiempo de comunicación ha expirado.",
 	"usuario_respondio": "El usuario respondio:",
 	"opcion_1": "1️. para sí",
@@ -38,7 +38,7 @@
 	"exit":"Salir",
 	"prima_opcion_1":"1. Solicitud por primera vez.",
 	"prima_opcion_2":"2. Adjuntar formulario de solictud y copia de cédula.",
-	"prima_opcion_3":"3. (Opcional)Adjuntar de certificaciones de continuidad de otras instituciones.",
+	"prima_opcion_3":"3. (Opcional) Adjuntar de certificaciones de continuidad de otras instituciones.",
 	"prima_opcion_4":"4. Consulta del trámite en curso (hablar con un agente).",
 	"try_again":"Intente nuevamente."
 }
