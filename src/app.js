@@ -122,7 +122,7 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
 const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAction(async (ctx, { endFlow, blacklist }) => {
         if (!esHorarioLaboral()) {
-            return endFlow(`${showMSG('fuera_laboral')}`)
+            return endFlow(`${showMSG('gracias')} ${showMSG('fuera_laboral')}`)
         } else {
             if (blacklist.checkIf(ctx.from.replace('+', ''))) {
                 //console.log('user blocked')
