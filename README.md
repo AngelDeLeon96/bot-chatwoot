@@ -3,7 +3,7 @@
     <picture>
       <img src="https://builderbot.vercel.app/assets/thumbnail-vector.png" height="80">
     </picture>
-    <h2 align="center">BOT WB + Chatwoot</h2>
+    <h2 align="center">BOT WB + Chatwoot Integration</h2>
   </a>
 </p>
 
