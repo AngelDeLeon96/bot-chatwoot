@@ -6,9 +6,34 @@
     "auditLog": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/.0b254d3ac01eff4a8d783350513495102b8795f9-audit.json",
     "files": [
         {
-            "date": 1724430791635,
-            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-08-23-combined.log",
-            "hash": "3045bc2fdc80acce2f8a65a6d669d06928bc1a3469153fd19a571d2c398b36e5"
+            "date": 1724936439889,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-08-29-combined.log",
+            "hash": "3205e4ac52642b40f6a0d73035b931e383a22d415413e5f7d95dfba77dfcf13b"
+        },
+        {
+            "date": 1725042975171,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-08-30-combined.log",
+            "hash": "3088d6041ee7ad69cc48143900a7d44abcc151c900007b36b61a0cd6c4d0e0f0"
+        },
+        {
+            "date": 1725367244314,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-09-03-combined.log",
+            "hash": "6242db945caf47482f63140d96d0b9cc72d908db1751a1ea3c3fcbbe9cb6f7fd"
+        },
+        {
+            "date": 1725459194111,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-09-04-combined.log",
+            "hash": "eb052a972bddb2af802ebcff7aca44635be88a6092c0434d4b1e5ec8fe2c84d8"
+        },
+        {
+            "date": 1725543168528,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-09-05-combined.log",
+            "hash": "ee287f2bb9bcbd2d3afb269d05cedc505db83522145abf460a8b279d7de04d78"
+        },
+        {
+            "date": 1725995655685,
+            "name": "/home/crmserver/projects/bot-chatwoot/src/utils/logs/2024-09-10-combined.log",
+            "hash": "0e68f5a3e078b8dd71e73547a40cc1c9c44f587e2d397a1831c3aa60388d5b3f"
         }
     ],
     "hashType": "sha256"

@@ -6,7 +6,7 @@ services:
       - 5555:5555
     volumes:
       - ./bot_sessions:/app/bot_sessions:rw
-      - ./logs:/app/src/utils/logs:rw
+      - ../logs:/app/src/utils/logs:rw
     env_file: .env
     environment:
       - TZ=America/Panama
