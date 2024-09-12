@@ -1,35 +1,32 @@
 import express from 'express';
-import { catch_error } from '../utils/utils.js';
+import { catch_error, findMyData } from '../utils/utils.js';
 const router = express.Router();
+const TIMER_BOT = process.env.TIMER_BOT ?? 600000
+import { timers } from '../utils/timer.js';
+import logger from '../utils/logger.js';
+import { break_flow } from '../utils/utils.js';
+
 // Enviar mensaje a usuario de WhatsApp
 const chatWoodHook = async (req, res) => {
     try {
-        const bot = req.bot;
         const providerWS = req.providerWS;
+        const bot = req.bot;
         const body = req.body;
-        const mapperAttributes = body?.conversation?.meta?.assignee;
+        //const mapperAttributes = body?.conversation?.meta?.assignee;
+        const mapperAttributes = findMyData(body, 'assignee');
         const attachments = body?.attachments;
         const phone = body.conversation?.meta?.sender?.phone_number.replace('+', '');
         const content = body.content;
         const status = body.status;
         const event = body.event;
-        const keywords = ['hasta luego', 'adios', 'resuelto'];
-
-        console.log("Comunicacion capturada con chatwoot-hook", JSON.stringify(body))
-        /*
-        if (body?.message_type === "incoming" && body?.private == true) {
-            console.log('el wb esta enviando mensajes...')
-            console.log(JSON.stringify(body?.conversation?.messages[0]?.conversation?.last_activity_at), '<+++++>', Date.now())
-            console.log(Date.now())
-        }*/
-        let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
+        let break_word = break_flow(content);
         let partial_status = (status === "resolved" && event === "conversation_updated")
-        if (partial || partial_status) {
+
+        if (break_word || partial_status) {
             let phone_check = bot.dynamicBlacklist.checkIf(phone)
-            //console.log('capturando el texto clave o cambio de estado.', partial, partial_status, phone_check)
             if (phone_check) {
                 bot.dynamicBlacklist.remove(phone);
-                console.log('user removed:', phone);
+                logger.info('bot reactivado para el usuario:', { phone: phone })
                 await providerWS.sendMessage(`${phone}`, '⭕️Comunicacion cerrada por el agente...', {});
                 res.send('ok');
             }
@@ -38,31 +35,46 @@ const chatWoodHook = async (req, res) => {
 
         /*La parte que se encarga de enviar un mensaje al whatsapp del cliente*/
         const checkIfMessage = body?.private == false && body?.event == "message_created" && body?.message_type === "outgoing" && body?.conversation?.channel.includes("Channel::Api")
-        //console.log(`checkif`, checkIfMessage, '\n')
-        if (checkIfMessage) {
-            //console.log('mensaje enviado desde CRM', `MSG is: ${body?.content}`, checkIfMessage, Date.now())
+
+        if (checkIfMessage && mapperAttributes !== null) {
             const content = body?.content ?? '';
             const file = attachments?.length ? attachments[0] : null;
-            //console.log(mapperAttributes)
             if (body?.event === 'message_created' && Object.hasOwn(mapperAttributes, 'id')) {
-                const idAssigned = mapperAttributes.id ?? true
-                //console.log('idAssigned: ', idAssigned)
+                const idAssigned = mapperAttributes.id ?? true;
+                //const idAssigned = true;
                 if (idAssigned) {
-                    //console.log(`${phone} blocked`)
-                    bot.dynamicBlacklist.add(phone)
+                    if (!bot.dynamicBlacklist.checkIf(phone) && !timers[phone]) {
+                        bot.dynamicBlacklist.add(phone);
+                        timers[phone] = setTimeout(() => {
+                            if (bot.dynamicBlacklist.checkIf(phone)) {
+                                bot.dynamicBlacklist.remove(phone)
+                            }
+                            //await providerWS.sendMessage(`${phone}`, '', {});
+                            logger.info('bot reactivado despues de 30min para el usuario:', { phone: phone })
+                        }, TIMER_BOT);
+                    }
+                } else {
+                    logger.warn('Agente no asignado...');
                 }
+            }
+            else {
+                logger.warn('Agente no asignado...');
+
             }
             //envia los docs al whatsapp
             if (file) {
-                const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
+                console.log(file.data_url)
+                //const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
+                const fileURL = file.data_url
                 await providerWS.sendMedia(`${phone}@c.us`, fileURL, content)
-                res.send('ok')
+                //res.send('ok')
                 return
             }
             /*esto envia un mensaje de texto al whatsapp de usuario*/
             await providerWS.sendMessage(`${phone}`, body.content, {});
-            res.send('ok');
-            console.log('=>OK')
+            //res.send('ok');
+            //console.log('=>OK')
+            logger.info('mensaje enviado a', { phone: phone })
             return;
         }
 
@@ -71,6 +83,7 @@ const chatWoodHook = async (req, res) => {
     }
     catch (err) {
         catch_error(err)
+        logger.error(`Error in chatWoodHook: ${err.message}`, { stack: err.stack, error: err.message });
     }
 
 };

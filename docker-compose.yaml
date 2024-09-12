@@ -6,9 +6,10 @@ services:
       - 5555:5555
     volumes:
       - ./bot_sessions:/app/bot_sessions:rw
+      - ../logs:/app/src/utils/logs:rw
     env_file: .env
-    cap_add: 
-      - SYS_ADMIN
+    environment:
+      - TZ=America/Panama
     restart: always
     networks:
       - chat_default
@@ -16,6 +17,7 @@ services:
 
 volumes:
   bot_sessions:
+  logs:
 
 networks:
   chat_default:

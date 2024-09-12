@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/crmserver/projects/bot-chatwoot-dev/bot-chatwoot/src/utils/logs/.3245fc698fb28f58c51da115b46fb7079f106c85-audit.json",
+    "files": [
+        {
+            "date": 1725999216152,
+            "name": "/home/crmserver/projects/bot-chatwoot-dev/bot-chatwoot/src/utils/logs/2024-09-10-error.log",
+            "hash": "198ec05b837f0a536b95d349c121972168b42aa5bd724f44bf720225ad0724d5"
+        },
+        {
+            "date": 1726079087783,
+            "name": "/home/crmserver/projects/bot-chatwoot-dev/bot-chatwoot/src/utils/logs/2024-09-11-error.log",
+            "hash": "489791a09579b52e254114612ba67ea9ec61bb9cd4a9b1cac7950be1658e2b4f"
+        }
+    ],
+    "hashType": "sha256"
+}
