@@ -74,7 +74,7 @@ const verificarOCrearCarpeta = (ruta) => {
     });
 }
 
-const esHorarioLaboral = () => {
+const esHorarioLaboral = (num) => {
     const fecha = new Date();
     const hora_inicio = Number(process.env.H_INICIO ?? 8);
     const hora_salida = Number(process.env.H_SALIDA ?? 16);
@@ -82,15 +82,32 @@ const esHorarioLaboral = () => {
     const final_semana = Number(process.env.S_LABORAL_FINAL ?? 5);
     const diaActual = fecha.getDay();
     const horaActual = fecha.getHours();
-    //console.log(`dia de la semana: ${diaActual}, hora actual${fecha.toString()} `)
-    const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana
-    const esHoraLaboral = horaActual >= hora_inicio && horaActual <= hora_salida
-    //console.log('es hora laboral y dia', esHoraLaboral, esDiaLaboral)
-    //console.log('Configuración:', { hora_inicio, hora_salida, inicio_semana, final_semana });
-    //console.log('Fecha actual:', fecha.toString());
-    return esHoraLaboral && esDiaLaboral ? true : false
-}
+    const minutosActual = fecha.getMinutes();
 
+    console.log('Hora inicio:', hora_inicio, 'Hora salida:', hora_salida);
+    console.log('Hora actual:', horaActual, 'Minutos:', minutosActual);
+
+    const tiempoActual = horaActual + minutosActual / 60;
+
+    const esDiaLaboral = diaActual >= inicio_semana && diaActual <= final_semana;
+    const esHoraLaboral = (
+        tiempoActual >= hora_inicio &&
+        tiempoActual < hora_salida
+    );
+
+    console.log('Es hora laboral:', esHoraLaboral, 'Es día laboral:', esDiaLaboral);
+
+    if (!esHoraLaboral || !esDiaLaboral) {
+        logger.info('Se intentó acceder fuera de horario laboral', {
+            hora: esHoraLaboral,
+            dia: esDiaLaboral,
+            num: num,
+            fechaActual: fecha.toString()
+        });
+    }
+
+    return esHoraLaboral && esDiaLaboral;
+}
 const getExtensionFromMime = (mimeType) => {
     const extension = mime.extension(mimeType);
     //console.log(`MIME type: ${mimeType}, Extension: ${extension}`);
