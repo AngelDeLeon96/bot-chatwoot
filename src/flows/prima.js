@@ -60,7 +60,7 @@ const attach_forms = addKeyword(EVENTS.ACTION)
         reset(ctx)
         //console.log('body: ', JSON.stringify(ctx))
         let extractedMime = extractMimeWb(ctx)
-        let formats = ['pdf', 'docx']
+        const formats = ['pdf', 'docx']
         if (formats.includes(extractedMime)) {
             let [msg, attachment] = await saveMediaWB(ctx)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
@@ -74,7 +74,7 @@ const attach_forms = addKeyword(EVENTS.ACTION)
         reset(ctx)
         //console.log('body: ', JSON.stringify(ctx))
         let extractedMime = extractMimeWb(ctx)
-        let formats = ['pdf', 'docx', 'png', 'jpg']
+        const formats = ['pdf', 'docx', 'png', 'jpg', 'jpeg', 'gif']
         if (formats.includes(extractedMime)) {
             let [msg, attachment] = await saveMediaWB(ctx)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
