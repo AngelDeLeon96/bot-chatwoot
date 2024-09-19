@@ -174,7 +174,7 @@ const recoverConversation = async (id = 0, user = "") => {
         for (let i = 0; i < payload.length; i++) {
             const conversation = payload[i];
             //console.log(conversation.id, conversation.status);
-            if (conversation.status === "open") {
+            if (conversation.status == "open") {
                 conversation_id = conversation.id;
                 break;
             }
@@ -183,11 +183,6 @@ const recoverConversation = async (id = 0, user = "") => {
                 //console.log('No se encontro una conversacion abierta.\n Se debe crear una nueva conversacion');
             }
         }
-
-        // Guardar los datos en caché
-        /*
-        if (id > 0)
-            cache.set(id, conversation_id);*/
 
         return conversation_id
     } catch (err) {
