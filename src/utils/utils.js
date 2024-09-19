@@ -4,7 +4,7 @@ import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 
 import logger from './logger.js'
-const ADMIN_NUMBER = process.env.ADMIN_NUMBER
+const ADMIN_NUMBER = process.env.PHONE_NUMBER
 
 const catch_error = (error) => {
     if (error.response) {
