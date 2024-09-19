@@ -11,8 +11,8 @@
 	"opciones": "Escriba 1 para sí o 2 para no.",
 	"finished": "Comunicación terminada con el usuario.",
 	"bot_deactivated": "Bot desactivado, el usuario puede hablar libremente.",
-	"agente_comunicara": "Un agente se estará comunicando con usted a este número.",
-	"llenar_form": "Por favor, descargue y rellene el siguiente formulario.",
+	"agente_comunicara": "Un agente se estará comunicando con usted a este número",
+	"llenar_form": "Por favor, rellene el siguiente formulario",
 	"error_generico": "Se produjo un error, intente nuevamente!",
 	"inactividad": "No obtuvimos respuesta, por ello damos finalizada la conversación.",
 	"bot_reactivated": "Hemos reactivado el bot para usted, ya que se ha cumplido el tiempo de actividad.",
@@ -32,7 +32,7 @@
 	"adjuntar_cedula": "Por favor, adjunte copia de su cédula en formato PDF.",
 	"adjuntar_form": "Por favor, adjunte el formulario de solicitud completado en formato PDF.",
 	"adjuntar_continuidad": "Por favor, adjunte las certificaciones de continuidad laboral emitidas por otras instituciones, si las tiene.",
-	"menu": "Menú de opciones:",
+	"menu": "Menú de opciones",
 	"selected": "Selecciono: ",
 	"subir_pdf":"Una vez completado y firmado, por favor suba el formulario en formato PDF. Utilice la opción 2 para adjuntar los documentos.",
 	"exit":"Salir",
@@ -40,5 +40,6 @@
 	"prima_opcion_2":"2. Adjuntar formulario de solictud y copia de cédula.",
 	"prima_opcion_3":"3. (Opcional) Adjuntar de certificaciones de continuidad de otras instituciones.",
 	"prima_opcion_4":"4. Consulta del trámite en curso (hablar con un agente).",
-	"try_again":"Intente nuevamente."
+	"try_again":"Intente nuevamente.",
+	"correcta_atencion":"Para brindarle una atención adecuada, por favor proporcione los datos solicitados."
 }
