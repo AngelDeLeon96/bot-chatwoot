@@ -15,6 +15,7 @@ import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
 import logger from './utils/logger.js';
 import { crearDetectorPalabrasOfensivas } from './utils/detector-words.js';
+const PHONE_NUMBER = process.env.PHONE_NUMBER
 
 const queue = new Queue({
     concurrent: 1,
@@ -130,7 +131,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
             }
         }
     })
-    .addAnswer(showMSG('bienvenida'), async (ctx, { globalState, gotoFlow }) => {
+    .addAnswer([showMSG('bienvenida'), showMSG('correcta_atencion')], async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
             console.log(user_data)
@@ -162,6 +163,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 const main = async () => {
     const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow, flowtest]);
     const adapterProvider = createProvider(Provider, {
+        phoneNumber: PHONE_NUMBER,
         experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
         experimentalStore: true,
         timeRelease: 10800000, // 3 hours in milliseconds

@@ -1,6 +1,6 @@
 {
   "name": "chatbot-fge",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "main": "src/app.js",
   "type": "module",
