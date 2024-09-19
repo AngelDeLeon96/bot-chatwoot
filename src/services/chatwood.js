@@ -111,7 +111,7 @@ const searchUser = async (user = "") => {
     try {
         const cachedData = getData(user);
         if (cachedData) {
-            //logger.info('Usando datos en caché para user:', { info: cachedData });
+            logger.info('Usando datos en caché para user:', { info: cachedData });
             return cachedData;
         }
         const url = builderURL(`contacts/search?q=${user}`)
@@ -140,13 +140,14 @@ const searchUser = async (user = "") => {
         }
         //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
         data_user.count = count
-        setCache(user, data_user)
+        if (data_user.user_id > 0) {
+            setCache(user, data_user)
+        }
 
         return data_user;
     } catch (err) {
         catch_error(err)
         //console.error(err)
-
     }
 };
 
@@ -173,7 +174,7 @@ const recoverConversation = async (id = 0, user = "") => {
         for (let i = 0; i < payload.length; i++) {
             const conversation = payload[i];
             //console.log(conversation.id, conversation.status);
-            if (conversation.status == "open") {
+            if (conversation.status === "open") {
                 conversation_id = conversation.id;
                 break;
             }

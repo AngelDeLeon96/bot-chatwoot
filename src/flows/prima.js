@@ -15,7 +15,7 @@ const queue = new Queue({
 
 const prima_menu = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer([showMSG('menu'), showMSG('prima_opcion_1'), showMSG('prima_opcion_2'), showMSG('prima_opcion_3'), showMSG('prima_opcion_4'), `5. ${showMSG('exit')}`], { capture: true }, async (ctx, { state }) => {
+    .addAnswer([showMSG('menu'), showMSG('solicitar_consulta'), showMSG('prima_opcion_1'), showMSG('prima_opcion_2'), showMSG('prima_opcion_3'), showMSG('prima_opcion_4'), `5. ${showMSG('exit')}`], { capture: true }, async (ctx, { state }) => {
         reset(ctx)
         await state.update({ 'prima_menu_opc': ctx.body })
     })
@@ -36,7 +36,7 @@ const prima_menu = addKeyword(EVENTS.ACTION)
                 return gotoFlow(freeFlow);
             case 5:
                 stop(ctx)
-                return endFlow(`${showMSG('gracias')} ${showMSG('reiniciar_bot')}`);
+                return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
                 reset(ctx)
                 return fallBack(showMSG('opcion_invalida'));

@@ -133,6 +133,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAnswer(showMSG('bienvenida'), async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
+            console.log(user_data)
             if (user_data != null) {
                 //set las variables con los datos del usuario como su: id y id de conversation
                 await globalState.update({ conversation_id: user_data.conversation_id });
