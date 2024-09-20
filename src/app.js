@@ -10,7 +10,7 @@ import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow } from 
 import { primera_vez, prima_menu, attach_forms, attach_forms_continuidad } from './flows/prima.js';
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
-import { catch_error, esHorarioLaboral, getMimeWB, saveMediaWB } from './utils/utils.js';
+import { catch_error, esHorarioLaboral, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
 import logger from './utils/logger.js';
@@ -36,9 +36,9 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { globalState, state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ name: ctx.body });
-        let typeMSG = getMimeWB(ctx.message)
-        if (typeMSG !== "senderKeyDistributionMessage") {
-            return fallBack(showMSG('no_permitida'));
+        let checkMSG = verifyMSG(ctx.body)
+        if (!checkMSG) {
+            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_nombre')}`);
         }
         else {
             sendMessageChatwood(state.get('name'), 'incoming', globalState.get('conversation_id'));
@@ -47,10 +47,9 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAnswer(showMSG('solicitar_cedula'), { capture: true }, async (ctx, { state, gotoFlow, globalState, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ cedula: ctx.body });
-        //console.log(ctx.message)
-        let typeMSG = getMimeWB(ctx.message)
-        if (typeMSG !== "senderKeyDistributionMessage") {
-            return fallBack(showMSG('no_permitida'));
+        let checkMSG = verifyMSG(ctx.body)
+        if (!checkMSG) {
+            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_cedula')}`);
         }
         else {
             sendMessageChatwood(state.get('cedula'), 'incoming', globalState.get('conversation_id'));
@@ -59,29 +58,26 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ consulta: ctx.body });
-        let typeMSG = getMimeWB(ctx.message)
         //console.log(typeMSG);
+        let typeMSG = getMimeWB(ctx.message)
         await state.update({ status: typeMSG });
-
         if (typeMSG !== "senderKeyDistributionMessage") {
-            return fallBack(showMSG('solicitar_nombre'));
+            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}`);
         }
     })
-    .addAction(async (ctx, { fallBack, gotoFlow, globalState, state }) => {
+    .addAction(async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
         stop(ctx);
         //console.log(state.get('typeMSG'));
         sendMessageChatwood(`${showMSG('selected')} ${state.get('consulta')}`, 'incoming', globalState.get('conversation_id'));
         switch (parseInt(ctx.body)) {
             case 1:
-                //console.log('prima menu');
                 return gotoFlow(prima_menu);
             case 2:
-                //console.log('vacaciones');
                 return gotoFlow(freeFlow);
             case 3:
-                return gotoFlow(flowMsgFinal);
+                return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
-                return fallBack(showMSG('opcion_invalida'));
+                return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('salir')}`);
         }
     })
 
