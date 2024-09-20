@@ -2,8 +2,10 @@ import { addKeyword } from '@builderbot/bot';
 import fs from 'fs';
 import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import { showMSG } from '../i18n/i18n.js';
+import logger from './logger.js';
+import { sendMessageChatwood } from '../services/chatwood.js';
 
-import logger from './logger.js'
 const ADMIN_NUMBER = process.env.PHONE_NUMBER
 
 const catch_error = (error) => {
@@ -260,10 +262,14 @@ const findCaption = (obj) => {
     return null;
 }
 
+const verifyMSG = (texto) => {
+    const regexSoloTexto = /^(?!_event)[\p{L}\p{N}\p{P}\p{Zs}]{5,}$/u;
+    return regexSoloTexto.test(texto);
+}
 const break_flow = (content) => {
     const keywords = ['hasta luego', 'adios', 'resuelto'];
 
     let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
     return partial;
 }
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData, break_flow };
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData, break_flow, verifyMSG };
