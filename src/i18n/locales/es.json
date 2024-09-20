@@ -16,7 +16,7 @@
 	"error_generico": "Se produjo un error, intente nuevamente!",
 	"inactividad": "No obtuvimos respuesta, por ello damos finalizada la conversación.",
 	"bot_reactivated": "Hemos reactivado el bot para usted, ya que se ha cumplido el tiempo de actividad.",
-	"no_permitida": "Datos incorrectos. Por favor, llenar los datos solicitados.",
+	"no_permitida": "Por favor, ingresa únicamente los datos solicitados. Recuerda que solo se debe enviar texto.",
 	"no_permitida_voz": "No se permite el envío de notas de voz.",
 	"solicitud_agente": "Si el agente no lo solicita.",
 	"fuera_laboral": "Nuestro horario de atención es de Lunes a Viernes de 8:00 am a 4:00 pm.",
