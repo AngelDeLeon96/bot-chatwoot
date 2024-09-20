@@ -109,11 +109,6 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
 
 const searchUser = async (user = "") => {
     try {
-        const cachedData = getData(user);
-        if (cachedData) {
-            logger.info('Usando datos en caché para user:', { info: cachedData });
-            return cachedData;
-        }
         const url = builderURL(`contacts/search?q=${user}`)
         //console.log(url)
         let count = null
