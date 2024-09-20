@@ -21,21 +21,17 @@ const prima_menu = addKeyword(EVENTS.ACTION)
     })
     .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
         sendMessageChatwood(`${showMSG('selected')} ${state.get('prima_menu_opc')}`, 'incoming', globalState.get('conversation_id'));
+        stop(ctx)
         switch (parseInt(state.get('prima_menu_opc'))) {
             case 1:
-                stop(ctx)
                 return gotoFlow(primera_vez);
             case 2:
-                stop(ctx)
                 return gotoFlow(attach_forms);
             case 3:
-                stop(ctx)
                 return gotoFlow(attach_forms_continuidad);
             case 4:
-                stop(ctx)
                 return gotoFlow(freeFlow);
             case 5:
-                stop(ctx)
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
                 reset(ctx)
