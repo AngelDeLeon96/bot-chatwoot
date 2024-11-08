@@ -110,8 +110,8 @@ const documentFlow2 = addKeyword(EVENTS.DOCUMENT)
 //voice notes
 const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
     .addAnswer(showMSG('gracias'))
-    .addAction(async (_, { endFlow }) => {
-        return endFlow(`${showMSG('reiniciar_bot')}`)
+    .addAction(async (_, { endFlow, gotoFlow }) => {
+        return gotoFlow(welcomeFlow)
     })
 
 export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow };
