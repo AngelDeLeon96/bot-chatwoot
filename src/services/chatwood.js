@@ -11,8 +11,10 @@ const INBOX_ID = process.env.INBOX_ID ?? 5;
 const API = process.env.API;
 const PORT = process.env.PORT;
 import { getData, setCache, clearCache } from '../utils/cachefn.js';
+import { log } from 'console';
 //console.log('server: ', SERVER, PORT);
-
+// Map para trackear las creaciones en proceso
+const pendingSearches = new Map();
 
 
 const builderURL = (path) => {
@@ -23,6 +25,7 @@ const builderURL = (path) => {
 //create
 const createConversationChatwood = async (msg = "", type = "outgoing", contact_id = 0) => {
     try {
+
         const myHeaders = new Headers();
         const url = builderURL('conversations')
         myHeaders.append("api_access_token", API);
@@ -40,7 +43,6 @@ const createConversationChatwood = async (msg = "", type = "outgoing", contact_i
 
         const dataRaw = await fetch(url, requestOptions);
         const data = await dataRaw.json();
-        //console.log('conv created: ', JSON.stringify(data))
         return data.id;
     } catch (err) {
         catch_error(err)
@@ -101,49 +103,128 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
         return data;
 
     } catch (err) {
-        catch_error(err);
         logger.error('Error en sendMessageChatwood:', { error: err });
         //throw err; // Re-lanza el error para que el llamador pueda manejarlo
     }
 };
 
-const searchUser = async (user = "") => {
+const createContact = async (phone = "", nombre = "sin_nombre") => {
     try {
-        const url = builderURL(`contacts/search?q=${user}`)
-        //console.log(url)
-        let count = null
-        let data_user = {}
-        const res = await axios.get(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                "api_access_token": API
-                // Añade otros encabezados si es necesario
+        const myHeaders = new Headers();
+        const url = builderURL('contacts');
+        const contact_data = {}
+        myHeaders.append("api_access_token", API);
+        myHeaders.append("Content-Type", "application/json");
+
+        const raw = JSON.stringify({
+            inbox_id: INBOX_ID,
+            name: nombre,
+            phone_number: `+${phone}`
+        });
+
+        const requestOptions = {
+            method: "POST",
+            headers: myHeaders,
+            body: raw,
+        };
+
+        const dataRaw = await fetch(url, requestOptions);
+        const response = await dataRaw.json();
+        contact_data.id = response.payload.contact.id;
+        contact_data.new = 1;
+        return contact_data;
+    }
+    catch (err) {
+        logger.err()
+        console.log("errpr al crrar el contacto: ", err)
+    }
+}
+
+const updateContact = async (id = 0, nombre = "", cedula = "") => {
+    const contact_data = null
+    try {
+        const myHeaders = new Headers();
+        const url = builderURL(`contacts/${id}`);
+
+        myHeaders.append("api_access_token", API);
+        myHeaders.append("Content-Type", "application/json");
+
+        const raw = JSON.stringify({
+            inbox_id: INBOX_ID,
+            name: nombre,
+            custom_attributes: {
+                cedula: cedula
             }
         });
 
-        const { meta, payload } = res.data
-        count = meta.count
-        //verificamos si hay datos
-        if (payload.length) {
-            payload.forEach(element => {
-                //se agrega el id del usuario
-                data_user.user_id = element.id
-            });
-        } else {
-            //no hay datos, no existe el user
-            data_user.user_id = 0
-        }
-        //se agrega el contador de conversaciones abiertas, minimo debe ser 1, si es 0 se debe crear la conver...
-        data_user.count = count
-        if (data_user.user_id > 0) {
-            setCache(user, data_user)
-        }
+        const requestOptions = {
+            method: "PUT",
+            headers: myHeaders,
+            body: raw,
+        };
+        const dataRaw = await fetch(url, requestOptions);
+        const response = await dataRaw.json();
 
-        return data_user;
-    } catch (err) {
-        catch_error(err)
-        //console.error(err)
+        logger.info("Se actualizaron los datos del contacto", { "user": id, "nombre": nombre });
+
+        return response.status;
     }
+    catch (err) {
+        logger.err("Error al actualizar el contacto", { "error": err });
+    }
+
+}
+
+const searchUser = async (user = "") => {
+    // Si ya hay una búsqueda en proceso para este usuario, retornar esa promesa
+    if (pendingSearches.has(user)) {
+        logger.info(`Búsqueda en proceso para: ${user}`)
+        return pendingSearches.get(user);
+    }
+
+    const searchPromise = (async () => {
+        try {
+            const url = builderURL(`contacts/search?q=${user}`);
+            let data_user = {};
+
+            const res = await axios.get(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    "api_access_token": API
+                }
+            });
+
+            const { meta, payload } = res.data;
+
+            // Si encontramos el usuario
+            if (payload.length > 0) {
+                data_user.user_id = payload[0].id;  // Tomamos el primer resultado
+                data_user.new = 0
+
+            } else {
+                const res_contact = await createContact(user);
+                data_user.user_id = res_contact.id;
+                data_user.new = res_contact.new;
+                logger.info(`Se creó el contacto: ${user} con id: ${res_contact.id} new: ${res_contact.new}`)
+            }
+
+            data_user.nombre = payload[0].name;
+            data_user.cedula = payload[0].custom_attributes.cedula;
+            data_user.count = meta.count;
+
+            return data_user;
+        } catch (err) {
+            catch_error(err);
+        } finally {
+            // Limpiar el Map de búsquedas pendientes
+            pendingSearches.delete(user);
+        }
+    })();
+
+    // Guardar la promesa en el Map
+    pendingSearches.set(user, searchPromise);
+
+    return searchPromise;
 };
 
 const recoverConversation = async (id = 0, user = "") => {
@@ -190,41 +271,35 @@ const recoverConversation = async (id = 0, user = "") => {
 
 const recover = async (user = {}) => {
     try {
-        const user_info = {}
-        const data_user = await searchUser(user)
+        const user_info = {};
+        const data_user = await searchUser(user);
 
         if (data_user.user_id > 0) {
-            user_info.user_id = data_user.user_id
             const lockKey = `user_conversation_${data_user.user_id}`;
             try {
                 await acquireLock(lockKey);
                 const conversation_id = await recoverConversation(data_user.user_id, user)
-                //console.log('id capturado: ', conversation_id)
                 if (conversation_id === 0) {
-                    const new_conv = await createConversationChatwood('', 'outgoing', user_info.user_id)
-                    //console.log('Nueva conversación creada:', new_conv)
+                    const new_conv = await createConversationChatwood('', 'outgoing', data_user.user_id)
                     logger.info('Nueva conversación creada', { 'id': new_conv, 'user': user })
-                    user_info.conversation_id = new_conv
+                    data_user.conversation_id = new_conv
                 } else {
-                    user_info.conversation_id = conversation_id
+                    data_user.conversation_id = conversation_id
                 }
             } finally {
                 await releaseLock(lockKey);
             }
         } else {
-            //console.log(user)
             logger.warn('No se encontró el usuario:', { error: user })
-            //console.log('No se encontró el usuario:', user)
             return null
         }
 
-        return user_info
+        return data_user
 
     } catch (err) {
-        logger.error('Error en recover:', { error: err })
         catch_error(err)
     }
 };
 
 
-export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover };
+export { sendMessageChatwood, createConversationChatwood, searchUser, recoverConversation, recover, updateContact };
