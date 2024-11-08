@@ -3,7 +3,7 @@ import { createBot, createProvider, createFlow, addKeyword, EVENTS } from '@buil
 import { MemoryDB as Database } from '@builderbot/bot'
 import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import ServerHttp from './http/server.js';
-import { sendMessageChatwood, recover } from './services/chatwood.js'
+import { sendMessageChatwood, recover, updateContact } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop } from './utils/timer.js'
 //flows
 import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow } from './flows/agents.js'
@@ -15,13 +15,17 @@ import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
 import logger from './utils/logger.js';
 import { crearDetectorPalabrasOfensivas } from './utils/detector-words.js';
+import { exceptions } from 'winston';
 const PHONE_NUMBER = process.env.PHONE_NUMBER
+const clientBuffers = new Map();
 
 const queue = new Queue({
     concurrent: 1,
     interval: 500
 });
 i18n.init();
+
+console.log("SERVER DOCKER: ", process.env.SERVER_DOCKER)
 
 const flowtest = addKeyword('testing2552')
     .addAction(async (ctx, { flowDynamic }) => {
@@ -55,7 +59,7 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             sendMessageChatwood(state.get('cedula'), 'incoming', globalState.get('conversation_id'));
         }
     })
-    .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, fallBack }) => {
+    .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('tramite_status'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ consulta: ctx.body });
         //console.log(typeMSG);
@@ -65,16 +69,36 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}`);
         }
     })
+    .addAction(async (ctx, { globalState, state }) => {
+        try {
+            const id = globalState.get('contact_id');
+            const nombre = state.get('name');
+            const cedula = state.get('cedula');
+            let up = null;
+            if (globalState.get('new') == 1) {
+                up = updateContact(id, nombre, cedula);
+                console.log(up)
+            }
+        }
+        catch (err) {
+            console.log(err)
+        }
+    })
     .addAction(async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
         stop(ctx);
-        //console.log(state.get('typeMSG'));
+
         sendMessageChatwood(`${showMSG('selected')} ${state.get('consulta')}`, 'incoming', globalState.get('conversation_id'));
         switch (parseInt(ctx.body)) {
             case 1:
+                //menu de prima de antiguedad
                 return gotoFlow(prima_menu);
             case 2:
+                //consultar vacaciones (free mode)
                 return gotoFlow(freeFlow);
             case 3:
+                //consultar tramite (free mode)
+                return gotoFlow(freeFlow)
+            case 4:
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
                 return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('salir')}`);
@@ -98,6 +122,7 @@ const userRegistered = addKeyword(EVENTS.ACTION)
 const userNotRegistered = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { flowDynamic, endFlow }) => {
         try {
+            logger.info("se produjo una excepcion en el flujo welcome y se redirijio al flujo userNotRegistered.")
             //console.log('Unregistered')
             const numero = ctx.from
             var FORMULARIO = process.env.FORM_URL
@@ -114,15 +139,50 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
         }
     });
 
+const testWelcomeFlow = addKeyword(EVENTS.WELCOME)
+    .addAction(async (ctx, { endFlow, flowDynamic }) => {
+        const clientId = ctx.from; //El numero de telefono funciona como id unico.
+
+        // Si el cliente no tiene un buffer aún, crear uno
+        if (!clientBuffers.has(clientId)) {
+            clientBuffers.set(clientId, { buffer: [], timeout: null });
+        }
+
+        // Obtener el buffer y el temporizador del cliente
+        const clientData = clientBuffers.get(clientId);
+
+        // Procesar si es un audio o texto
+        if (!ctx.body.includes("_event_voice_note_")) {
+            clientData.buffer.push(ctx.body);
+        }
+        // Limpiar el temporizador anterior si existe
+        if (clientData.timeout) {
+            clearTimeout(clientData.timeout);
+        }
+
+        // Iniciar un nuevo temporizador
+        clientData.timeout = setTimeout(async () => {
+            // Unir todos los mensajes del buffer en un solo string
+            const messagesToProcess = clientData.buffer.join(' ');
+            clientData.buffer = []; // Limpiar el buffer
+
+            await flowDynamic(messagesToProcess);
+
+            console.log(response);
+
+            // Limpiar el temporizador del cliente
+            clientBuffers.delete(clientId);
+
+        }, 6000); // Esperar segundos sin recibir más mensajes
+    })
 
 //flow principal
-const welcomeFlow = addKeyword(EVENTS.WELCOME)
+const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NOTE, EVENTS.MEDIA, EVENTS.LOCATION])
     .addAction(async (ctx, { endFlow, blacklist }) => {
         if (!esHorarioLaboral(ctx.from)) {
             return endFlow(`${showMSG('gracias')}\n${showMSG('fuera_laboral')}`)
         } else {
             if (blacklist.checkIf(ctx.from.replace('+', ''))) {
-                //console.log('user blocked')
                 return endFlow()
             }
         }
@@ -130,23 +190,22 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
     .addAnswer([showMSG('bienvenida'), showMSG('correcta_atencion')], async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
-            console.log(user_data)
+            console.log('user found: ', user_data)
             if (user_data != null) {
                 //set las variables con los datos del usuario como su: id y id de conversation
                 await globalState.update({ conversation_id: user_data.conversation_id });
                 await globalState.update({ contact_id: user_data.user_id });
-
+                await globalState.update({ new: user_data.new });
+                console.log(globalState.get('new'), globalState.get("contact_id"));
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
                     return gotoFlow(registerMsgConversation);
                 } else {
                     logger.warn('not found.', { 'user': ctx.from })
-                    //console.log('user or chat not found...');
                 }
             }
             else {
                 return gotoFlow(userNotRegistered);
             }
-
         }
         catch (err) {
             catch_error(err);
@@ -157,7 +216,7 @@ const welcomeFlow = addKeyword(EVENTS.WELCOME)
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, documentFlow2, mediaFlow, voiceNoteFlow, flowtest]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, flowtest]);
     const adapterProvider = createProvider(Provider, {
         phoneNumber: PHONE_NUMBER,
         experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
