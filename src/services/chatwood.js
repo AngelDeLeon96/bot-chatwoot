@@ -108,7 +108,7 @@ const sendMessageChatwood = async (msg = "", message_type = "incoming", conversa
     }
 };
 
-const createContact = async (phone = "", nombre = "sin_nombre") => {
+const createContact = async (phone = "") => {
     try {
         const myHeaders = new Headers();
         const url = builderURL('contacts');
@@ -118,7 +118,7 @@ const createContact = async (phone = "", nombre = "sin_nombre") => {
 
         const raw = JSON.stringify({
             inbox_id: INBOX_ID,
-            name: nombre,
+            name: `${phone}`,
             phone_number: `+${phone}`
         });
 
@@ -132,11 +132,13 @@ const createContact = async (phone = "", nombre = "sin_nombre") => {
         const response = await dataRaw.json();
         contact_data.id = response.payload.contact.id;
         contact_data.new = 1;
+        logger.info(`Se creó el contacto: ${phone} con id: ${contact_data.id} new: ${contact_data.new}`);
+
         return contact_data;
     }
     catch (err) {
-        logger.err()
-        console.log("errpr al crrar el contacto: ", err)
+        logger.err("Error al crear el contacto", { "err": err })
+
     }
 }
 
@@ -162,6 +164,7 @@ const updateContact = async (id = 0, nombre = "", cedula = "") => {
             headers: myHeaders,
             body: raw,
         };
+
         const dataRaw = await fetch(url, requestOptions);
         const response = await dataRaw.json();
 
@@ -186,34 +189,39 @@ const searchUser = async (user = "") => {
         try {
             const url = builderURL(`contacts/search?q=${user}`);
             let data_user = {};
+            const myHeaders = new Headers();
+            myHeaders.append("api_access_token", API);
+            myHeaders.append("Content-Type", "application/json");
 
-            const res = await axios.get(url, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    "api_access_token": API
-                }
-            });
-
-            const { meta, payload } = res.data;
+            const requestOptions = {
+                method: "GET",
+                headers: myHeaders,
+            };
+            const dataRaw = await fetch(url, requestOptions);
+            const response = await dataRaw.json();
+            const { meta, payload } = response;
 
             // Si encontramos el usuario
             if (payload.length > 0) {
                 data_user.user_id = payload[0].id;  // Tomamos el primer resultado
-                data_user.new = 0
-
-            } else {
+                data_user.new = 0;
+                data_user.nombre = payload[0].name;
+                data_user.cedula = payload[0].custom_attributes.cedula;
+            }
+            else {
                 const res_contact = await createContact(user);
                 data_user.user_id = res_contact.id;
                 data_user.new = res_contact.new;
-                logger.info(`Se creó el contacto: ${user} con id: ${res_contact.id} new: ${res_contact.new}`)
+                data_user.nombre = user;
+                data_user.cedula = "0000000000";
             }
 
-            data_user.nombre = payload[0].name;
-            data_user.cedula = payload[0].custom_attributes.cedula;
             data_user.count = meta.count;
 
             return data_user;
         } catch (err) {
+            console.log(err)
+            logger.err("Se produjo un error al buscar", { "error": err })
             catch_error(err);
         } finally {
             // Limpiar el Map de búsquedas pendientes
