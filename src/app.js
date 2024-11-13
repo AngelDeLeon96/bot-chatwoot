@@ -6,16 +6,15 @@ import ServerHttp from './http/server.js';
 import { sendMessageChatwood, recover, updateContact } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop } from './utils/timer.js'
 //flows
-import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow } from './flows/agents.js'
+import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow, flowDefault } from './flows/agents.js'
 import { primera_vez, prima_menu, attach_forms, attach_forms_continuidad } from './flows/prima.js';
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
-import { catch_error, esHorarioLaboral, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
+import { catch_error, esHorarioLaboral, formatName, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
 import debounce from './utils/debounce.js';
 import logger from './utils/logger.js';
 import { crearDetectorPalabrasOfensivas } from './utils/detector-words.js';
-import { exceptions } from 'winston';
 const PHONE_NUMBER = process.env.PHONE_NUMBER
 const clientBuffers = new Map();
 
@@ -33,16 +32,53 @@ const flowtest = addKeyword('testing2552')
         return await flowDynamic(`La fecha es: ${fecha.toString()}`);
     })
 //clearCache();
+//user data registered
+const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
+    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
+    .addAction(async (_, { flowDynamic, globalState }) => {
+        await flowDynamic(`${showMSG('user_registered')} ${globalState.get('nombre')}`);
+        await flowDynamic([{ delay: 200, body: `${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}` }])
+    })
+    .addAction({ capture: true }, async (ctx, { flowDynamic, fallBack, state, gotoFlow, endFlow }) => {
+        reset(ctx, gotoFlow);
+        await state.update({ opc_consulta: ctx.body });
+        console.log('seleccionaste: ', ctx.body, state.get('opc_consulta'));
+
+        let typeMSG = getMimeWB(ctx.message)
+        await state.update({ status: typeMSG });
+
+        if (typeMSG !== "senderKeyDistributionMessage") {
+            return fallBack(`${showMSG('solicitar_consulta')}`);
+        }
+        else {
+            switch (parseInt(state.get('opc_consulta'))) {
+                case 1:
+                    //menu de prima de antiguedad
+                    return gotoFlow(prima_menu);
+                case 2:
+                    //consultar vacaciones (free mode)
+                    return gotoFlow(freeFlow);
+                case 3:
+                    //consultar tramite (free mode)
+                    return gotoFlow(freeFlow)
+                case 4:
+                    return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
+                default:
+                    return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('salir')}`);
+            }
+        }
+    })
+
 
 //registramos un MSG en una conversacion
-const registerMsgConversation = addKeyword(EVENTS.ACTION)
+const menuPrincipal = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(showMSG('solicitar_nombre'), { capture: true }, async (ctx, { globalState, state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ name: ctx.body });
         let checkMSG = verifyMSG(ctx.body)
         if (!checkMSG) {
-            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_nombre')}`);
+            return fallBack(`${showMSG('solicitar_nombre')}`);
         }
         else {
             sendMessageChatwood(state.get('name'), 'incoming', globalState.get('conversation_id'));
@@ -51,9 +87,9 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     .addAnswer(showMSG('solicitar_cedula'), { capture: true }, async (ctx, { state, gotoFlow, globalState, fallBack }) => {
         reset(ctx, gotoFlow);
         await state.update({ cedula: ctx.body });
-        let checkMSG = verifyMSG(ctx.body)
+        let checkMSG = verifyMSG(ctx.body);
         if (!checkMSG) {
-            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_cedula')}`);
+            return fallBack(`${showMSG('solicitar_cedula')}`);
         }
         else {
             sendMessageChatwood(state.get('cedula'), 'incoming', globalState.get('conversation_id'));
@@ -61,12 +97,11 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
     })
     .addAnswer([showMSG('solicitar_consulta'), showMSG('prima'), showMSG('vacaciones'), showMSG('tramite_status'), showMSG('salir')], { capture: true, delay: 500 }, async (ctx, { state, gotoFlow, fallBack }) => {
         reset(ctx, gotoFlow);
-        await state.update({ consulta: ctx.body });
-        //console.log(typeMSG);
+        await state.update({ opc_consulta: ctx.body });
         let typeMSG = getMimeWB(ctx.message)
         await state.update({ status: typeMSG });
         if (typeMSG !== "senderKeyDistributionMessage") {
-            return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}`);
+            return fallBack(`${showMSG('solicitar_consulta')}`);
         }
     })
     .addAction(async (ctx, { globalState, state }) => {
@@ -74,9 +109,8 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             const id = globalState.get('contact_id');
             const nombre = state.get('name');
             const cedula = state.get('cedula');
-            let up = null;
             if (globalState.get('new') == 1) {
-                up = updateContact(id, nombre, cedula);
+                const up = updateContact(id, nombre, cedula);
                 console.log(up)
             }
         }
@@ -84,11 +118,10 @@ const registerMsgConversation = addKeyword(EVENTS.ACTION)
             console.log(err)
         }
     })
-    .addAction(async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
+    .addAction({ delay: 500 }, async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
         stop(ctx);
-
-        sendMessageChatwood(`${showMSG('selected')} ${state.get('consulta')}`, 'incoming', globalState.get('conversation_id'));
-        switch (parseInt(ctx.body)) {
+        sendMessageChatwood(`${showMSG('selected')} ${state.get('opc_consulta')}`, 'incoming', globalState.get('conversation_id'));
+        switch (parseInt(state.get('opc_consulta'))) {
             case 1:
                 //menu de prima de antiguedad
                 return gotoFlow(prima_menu);
@@ -126,10 +159,7 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
             //console.log('Unregistered')
             const numero = ctx.from
             var FORMULARIO = process.env.FORM_URL
-            var MSG = [
-                `${showMSG('llenar_form')}: ${FORMULARIO}.`,
-                `${showMSG('agente_comunicara')}: ${numero}.`
-            ]
+            var MSG = "Se produjo una excepción no esperada, intente más tarde."
             await flowDynamic(MSG)
             return endFlow()
         }
@@ -196,11 +226,18 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
                 await globalState.update({ conversation_id: user_data.conversation_id });
                 await globalState.update({ contact_id: user_data.user_id });
                 await globalState.update({ new: user_data.new });
+                if (parseInt(globalState.get('new')) == 0)
+                    await globalState.update({ nombre: user_data.nombre })
+
                 console.log(globalState.get('new'), globalState.get("contact_id"));
+
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
-                    return gotoFlow(registerMsgConversation);
-                } else {
-                    logger.warn('not found.', { 'user': ctx.from })
+                    if (parseInt(globalState.get('new')) == 1) {
+                        return gotoFlow(menuPrincipal);
+                    }
+                    else {
+                        return gotoFlow(menuPrincipalwithoutRegister);
+                    }
                 }
             }
             else {
@@ -208,7 +245,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
             }
         }
         catch (err) {
-            catch_error(err);
+            logger.error("Se produjo un error", { "err": err })
         }
     })
 
@@ -216,7 +253,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, registerMsgConversation, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, flowtest]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, menuPrincipal, menuPrincipalwithoutRegister, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, flowtest]);
     const adapterProvider = createProvider(Provider, {
         phoneNumber: PHONE_NUMBER,
         experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
@@ -245,7 +282,7 @@ const main = async () => {
     adapterProvider.on('message', async (payload) => {
         try {
             //verificamos si el usuario esta con el bot desactivado, es decir el modo libre esta activado
-            //console.log(`payload: `, JSON.stringify(payload), '\n')
+            //console.log(`payload: `, JSON.stringify(payload), '\n');
             let debounceSendMSG = debounce(sendMessageChatwood, 100);
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
                 //console.log(JSON.stringify('free mode'))
