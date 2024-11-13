@@ -266,10 +266,15 @@ const verifyMSG = (texto) => {
     const regexSoloTexto = /^(?!_event)[\p{L}\p{N}\p{P}\p{Zs}]{5,}$/u;
     return regexSoloTexto.test(texto);
 }
+const formatName = (text) => {
+    return text.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
 const break_flow = (content) => {
     const keywords = ['hasta luego', 'adios', 'resuelto'];
 
     let partial = content ? keywords.includes(content.normalize('NFD').toLowerCase().replace(/[\u0300-\u036f]/g, "")) : false
     return partial;
 }
-export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData, break_flow, verifyMSG };
+export { catch_error, numberClean, blackListFlow, verificarOCrearCarpeta, esHorarioLaboral, getExtensionFromMime, getMimeWB, saveMediaWB, extractMimeWb, findMyData, break_flow, verifyMSG, formatName };
