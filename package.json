@@ -13,14 +13,14 @@
   "dependencies": {
     "@builderbot/bot": "1.2.2",
     "@builderbot/provider-baileys": "1.2.2",
-    "@whiskeysockets/baileys": "^6.7.8",
+    "@whiskeysockets/baileys": "^6.7.9",
     "axios": "^1.7.7",
     "express": "^4.21.1",
     "i18n": "^0.15.1",
-    "lru-cache": "^11.0.1",
+    "lru-cache": "^11.0.2",
     "mime-types": "^2.1.35",
     "queue-promise": "^2.2.1",
-    "winston": "^3.15.0",
+    "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
