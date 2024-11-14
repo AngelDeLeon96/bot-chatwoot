@@ -6,8 +6,8 @@ import ServerHttp from './http/server.js';
 import { sendMessageChatwood, recover, updateContact } from './services/chatwood.js'
 import { flujoFinal, reset, start, stop } from './utils/timer.js'
 //flows
-import { freeFlow, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow, flowDefault } from './flows/agents.js'
-import { primera_vez, prima_menu, attach_forms, attach_forms_continuidad } from './flows/prima.js';
+import { freeFlow } from './flows/agents.js'
+import { primera_vez, prima_menu, attach_forms, attach_forms_cedula, attach_forms_continuidad } from './flows/prima.js';
 const PORT = process.env.PORT_WB ?? 1000
 import Queue from 'queue-promise';
 import { catch_error, esHorarioLaboral, formatName, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
@@ -36,17 +36,13 @@ const flowtest = addKeyword('testing2552')
 const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAction(async (_, { flowDynamic, globalState }) => {
-        await flowDynamic(`${showMSG('user_registered')} ${globalState.get('nombre')}`);
-        await flowDynamic([{ delay: 200, body: `${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}` }])
+        await flowDynamic(`${showMSG('user_registered')} ${globalState.get('nombre')}?`);
+        await flowDynamic([{ delay: 200, body: `${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}` }]);
     })
     .addAction({ capture: true }, async (ctx, { flowDynamic, fallBack, state, gotoFlow, endFlow }) => {
         reset(ctx, gotoFlow);
         await state.update({ opc_consulta: ctx.body });
-        console.log('seleccionaste: ', ctx.body, state.get('opc_consulta'));
-
         let typeMSG = getMimeWB(ctx.message)
-        await state.update({ status: typeMSG });
-
         if (typeMSG !== "senderKeyDistributionMessage") {
             return fallBack(`${showMSG('solicitar_consulta')}`);
         }
@@ -64,7 +60,7 @@ const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
                 case 4:
                     return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
                 default:
-                    return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('salir')}`);
+                    return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
             }
         }
     })
@@ -134,7 +130,7 @@ const menuPrincipal = addKeyword(EVENTS.ACTION)
             case 4:
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
-                return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('salir')}`);
+                return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
         }
     })
 
@@ -253,7 +249,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
 
 //flujo principal
 const main = async () => {
-    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, menuPrincipal, menuPrincipalwithoutRegister, prima_menu, attach_forms, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, flowtest]);
+    const adapterFlow = createFlow([welcomeFlow, userNotRegistered, userRegistered, menuPrincipal, menuPrincipalwithoutRegister, prima_menu, attach_forms, attach_forms_cedula, attach_forms_continuidad, flujoFinal, freeFlow, primera_vez, flowtest]);
     const adapterProvider = createProvider(Provider, {
         phoneNumber: PHONE_NUMBER,
         experimentalSyncMessage: 'Si desea comunicarse, escriba: hola.',
