@@ -4,37 +4,33 @@ import { sendMessageChatwood } from '../services/chatwood.js';
 import { reset, start, stop } from '../utils/timer.js';
 import { showMSG } from '../i18n/i18n.js';
 import { freeFlow } from './agents.js';
-import Queue from 'queue-promise';
-import { saveMediaWB, getMimeWB, extractMimeWb } from '../utils/utils.js';
+import { saveMediaWB, extractMimeWb } from '../utils/utils.js';
 
-
-const queue = new Queue({
-    concurrent: 1,
-    interval: 500
-});
 
 const prima_menu = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer([showMSG('menu'), showMSG('solicitar_consulta'), showMSG('prima_opcion_1'), showMSG('prima_opcion_2'), showMSG('prima_opcion_3'), showMSG('prima_opcion_4'), `5. ${showMSG('exit')}`], { capture: true }, async (ctx, { state }) => {
-        reset(ctx)
+    .addAnswer([showMSG('menu'), showMSG('solicitar_consulta'), showMSG('prima_opcion_1'), showMSG('prima_opcion_2'), showMSG('prima_opcion_3'), showMSG('prima_opcion_4'), showMSG('prima_opcion_5'), `6. ${showMSG('exit')}`], { capture: true }, async (ctx, { state, gotoFlow }) => {
+        reset(ctx, gotoFlow);
         await state.update({ 'prima_menu_opc': ctx.body })
     })
     .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
         sendMessageChatwood(`${showMSG('selected')} ${state.get('prima_menu_opc')}`, 'incoming', globalState.get('conversation_id'));
-        stop(ctx)
+
         switch (parseInt(state.get('prima_menu_opc'))) {
             case 1:
                 return gotoFlow(primera_vez);
             case 2:
                 return gotoFlow(attach_forms);
             case 3:
-                return gotoFlow(attach_forms_continuidad);
+                return gotoFlow(attach_forms_cedula);
             case 4:
-                return gotoFlow(freeFlow);
+                return gotoFlow(attach_forms_continuidad);
             case 5:
+                return gotoFlow(freeFlow);
+            case 6:
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
-                reset(ctx)
+                reset(ctx, gotoFlow);
                 return fallBack(showMSG('opcion_invalida'));
         }
     })
@@ -48,12 +44,12 @@ const primera_vez = addKeyword(EVENTS.ACTION)
         return gotoFlow(prima_menu)
     })
 
-//flow para attach los docs de form, cedula.
+//flow para attach los docs de form,.
 const attach_forms = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_2')}`)
-    .addAnswer(`${showMSG('adjuntar_form')}`, { capture: true }, async (ctx, { fallBack, globalState }) => {
-        reset(ctx)
+    .addAnswer(`${showMSG('adjuntar_form')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
+        reset(ctx, gotoFlow)
         //console.log('body: ', JSON.stringify(ctx))
         let extractedMime = extractMimeWb(ctx)
         const formats = ['pdf', 'docx']
@@ -66,9 +62,18 @@ const attach_forms = addKeyword(EVENTS.ACTION)
         }
     })
     .addAnswer(showMSG('formulario_captado'))
-    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { fallBack, globalState }) => {
-        reset(ctx)
-        //console.log('body: ', JSON.stringify(ctx))
+    .addAction(async (ctx, { gotoFlow }) => {
+        stop(ctx)
+        //return endFlow(`${showMSG('formulario_captado')}`)
+        return gotoFlow(prima_menu)
+    })
+
+//flow para attach los docs de cedula.
+const attach_forms_cedula = addKeyword(EVENTS.ACTION)
+    .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
+    .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_3')}`)
+    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
+        reset(ctx, gotoFlow)
         let extractedMime = extractMimeWb(ctx)
         const formats = ['pdf', 'docx', 'png', 'jpg', 'jpeg', 'gif']
         if (formats.includes(extractedMime)) {
@@ -79,19 +84,17 @@ const attach_forms = addKeyword(EVENTS.ACTION)
             return fallBack(`${showMSG('no_permitida')} Solo se permiten los archivos en formato: ${formats}. ${showMSG('try_again')}`);
         }
     })
-    .addAnswer(`${showMSG('formulario_captado')}`)
+    .addAnswer(`${showMSG('cedula_captada')}`)
     .addAction(async (ctx, { gotoFlow }) => {
         stop(ctx)
-        //return endFlow(`${showMSG('formulario_captado')}`)
         return gotoFlow(prima_menu)
     })
 
-
 const attach_forms_continuidad = addKeyword('attach2')
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_3')}`)
-    .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { globalState, fallBack }) => {
-        reset(ctx)
+    .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_4')}`)
+    .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { globalState, fallBack, gotoFlow }) => {
+        reset(ctx, gotoFlow)
         let extractedMime = extractMimeWb(ctx)
         //console.log('ext detected: ', extractedMime)
         let formats = ['pdf', 'docx']
@@ -112,4 +115,4 @@ const attach_forms_continuidad = addKeyword('attach2')
 
 
 
-export { primera_vez, prima_menu, attach_forms, attach_forms_continuidad };
+export { primera_vez, prima_menu, attach_forms, attach_forms_cedula, attach_forms_continuidad };
