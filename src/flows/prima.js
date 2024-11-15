@@ -15,7 +15,7 @@ const prima_menu = addKeyword(EVENTS.ACTION)
     })
     .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
         sendMessageChatwood(`${showMSG('selected')} ${state.get('prima_menu_opc')}`, 'incoming', globalState.get('conversation_id'));
-
+        stop(ctx)
         switch (parseInt(state.get('prima_menu_opc'))) {
             case 1:
                 return gotoFlow(primera_vez);
