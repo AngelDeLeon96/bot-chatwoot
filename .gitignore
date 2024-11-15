@@ -5,7 +5,7 @@ node_modules
 *_sessions
 *tokens
 .wwebjs*
-
+pnpm-lock.yaml
 *.log
 *qr.png
 public/*
