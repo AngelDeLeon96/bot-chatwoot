@@ -39,29 +39,31 @@ const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
         await flowDynamic(`${showMSG('user_registered')} ${globalState.get('nombre')}?`);
         await flowDynamic([{ delay: 200, body: `${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}` }]);
     })
-    .addAction({ capture: true }, async (ctx, { flowDynamic, fallBack, state, gotoFlow, endFlow }) => {
+    .addAction({ capture: true }, async (ctx, { fallBack, state, gotoFlow }) => {
         reset(ctx, gotoFlow);
         await state.update({ opc_consulta: ctx.body });
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG !== "senderKeyDistributionMessage") {
             return fallBack(`${showMSG('solicitar_consulta')}`);
         }
-        else {
-            switch (parseInt(state.get('opc_consulta'))) {
-                case 1:
-                    //menu de prima de antiguedad
-                    return gotoFlow(prima_menu);
-                case 2:
-                    //consultar vacaciones (free mode)
-                    return gotoFlow(freeFlow);
-                case 3:
-                    //consultar tramite (free mode)
-                    return gotoFlow(freeFlow)
-                case 4:
-                    return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
-                default:
-                    return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
-            }
+    })
+    .addAction(async (ctx, { fallBack, state, gotoFlow, endFlow, globalState }) => {
+        stop(ctx);
+        sendMessageChatwood(`${showMSG('selected')} ${state.get('opc_consulta')}`, 'incoming', globalState.get('conversation_id'));
+        switch (parseInt(state.get('opc_consulta'))) {
+            case 1:
+                //menu de prima de antiguedad
+                return gotoFlow(prima_menu);
+            case 2:
+                //consultar vacaciones (free mode)
+                return gotoFlow(freeFlow);
+            case 3:
+                //consultar tramite (free mode)
+                return gotoFlow(freeFlow)
+            case 4:
+                return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
+            default:
+                return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
         }
     })
 
@@ -100,7 +102,7 @@ const menuPrincipal = addKeyword(EVENTS.ACTION)
             return fallBack(`${showMSG('solicitar_consulta')}`);
         }
     })
-    .addAction(async (ctx, { globalState, state }) => {
+    .addAction(async (_, { globalState, state }) => {
         try {
             const id = globalState.get('contact_id');
             const nombre = state.get('name');
@@ -281,30 +283,34 @@ const main = async () => {
             //console.log(`payload: `, JSON.stringify(payload), '\n');
             let debounceSendMSG = debounce(sendMessageChatwood, 100);
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
-                //console.log(JSON.stringify('free mode'))
+
                 queue.enqueue(async () => {
-                    let [msg, attachment] = await saveMediaWB(payload);
-                    const detector = await crearDetectorPalabrasOfensivas();
-                    const result = await detector(msg);
-                    const daata = await recover(payload.from);
-                    const conversation_id = daata.conversation_id;
+                    let [msg, attachment, status_code] = await saveMediaWB(payload);
+                    console.log("result fn saveMedia", msg, attachment, status_code)
+                    if (parseInt(status_code) == 200) {
+                        const detector = await crearDetectorPalabrasOfensivas();
+                        const result = await detector(msg);
+                        const daata = await recover(payload.from);
+                        const conversation_id = daata.conversation_id;
 
-                    if (conversation_id > 0) {
-                        //console.log('debounce')
-                        msg = result.mensajeEtiquetado;
-                        debounceSendMSG(msg, 'incoming', conversation_id, attachment);
-
-                        if (result.puntajeTotal >= 2) {
-                            logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from });
-                            adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {});
+                        if (conversation_id > 0) {
+                            //console.log('debounce')
+                            msg = result.mensajeEtiquetado;
+                            debounceSendMSG(msg, 'incoming', conversation_id, attachment);
+                            if (result.puntajeTotal >= 2) {
+                                logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from });
+                                //send msg to whatsapp user
+                                adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {});
+                            }
                         }
+                    } else {
+                        adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido no permitido detectado. Revise su mensaje.' }, {});
                     }
                 });
             }
         }
         catch (err) {
-            catch_error(err);
-            console.error('ERROR', err)
+            logger.error("error al desactivar el bot", { "err": err })
         }
     });
 
@@ -322,8 +328,8 @@ const main = async () => {
             }
         }
         catch (err) {
-            catch_error(err);
             //console.error('ERROR', err)
+            logger.error("error al reenviar los msg del bot.", { "err": err })
         }
     });
 }
