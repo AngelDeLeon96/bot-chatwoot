@@ -1,5 +1,5 @@
 import { addKeyword } from '@builderbot/bot';
-import fs from 'fs';
+import fs, { statSync } from 'fs';
 import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { showMSG } from '../i18n/i18n.js';
@@ -9,6 +9,7 @@ import { sendMessageChatwood } from '../services/chatwood.js';
 const ADMIN_NUMBER = process.env.PHONE_NUMBER
 
 const catch_error = (error) => {
+    console.log(error);
     if (error.response) {
         // El servidor respondió con un código de estado fuera del rango 2xx
         if (error.response.status === 404) {
@@ -128,24 +129,26 @@ const getMimeWB = (messages) => {
 }
 
 const saveMediaWB = async (payload) => {
+    console.log(JSON.stringify(payload))
     const fecha = new Date();
-    const mime_blocked = ['audio', 'video', 'webp']
-    const media_blocked = ['webp', 'gif']
+    const mime_blocked = ['audio', 'video']
+    const ext_blocked = ["gif", "webp", "acc", "wav", "mp3", "mp4"]
     let attachment = [];
-    let caption = "";
     let msg = "";
-    const mime = findMimeType(payload);
+    let status_code = 200;
+    const mime = findMyData(payload, "mimetype");
     let ext = null;
-    //console.log('mensaje capturado con el provider: ',);
-    if (payload?.body.includes('_event_') || mime) {
+
+    //solo texto
+    if (payload?.body.includes('_event_') && mime != null) {
         const mimeType = mime.split("/")[0];
-        //console.log('saveMedia', mime);
         ext = getExtensionFromMime(mime);
-        if (!mime_blocked.includes(mimeType) || !media_blocked.includes(ext)) {
-            //console.log('Procesando archivo no audio/video', JSON.stringify(payload.body));
-            caption = findCaption(payload)
+        console.log('mensaje capturado con el provider: ', mime, ext, mime_blocked.includes(mimeType), ext_blocked.includes(ext));
+
+        if (!mime_blocked.includes(mimeType) && !ext_blocked.includes(ext)) {
+            console.log('Procesando archivo docs e images', JSON.stringify(payload.body));
             try {
-                msg = caption || "Archivo adjunto sin mensaje";
+                msg = findCaption(payload);
                 //console.log('caption', caption, msg)
                 const nombre = procesarNombreArchivo(msg);
                 let filename = nombre.toLocaleLowerCase() || 'file';
@@ -158,22 +161,26 @@ const saveMediaWB = async (payload) => {
                 await fs.promises.writeFile(pathFile, buffer);
                 //console.log('Archivo guardado correctamente en:', pathFile, saved);
                 attachment.push(pathFile);
+                status_code = 201;
             } catch (error) {
                 logger.error('Error al procesar el archivo:', { 'error': error })
                 //console.error('Error al procesar el archivo:', error);
-                msg = "Hubo un error al procesar el archivo adjunto.";
+                msg = "";
+                status_code = 404
             }
         } else {
             //console.log('Archivo de audio o video no permitido');
             logger.warn("El usuario intento enviar de audios, notas de voz o videos.")
-            msg = "El usuario intento enviar de audios, notas de voz o videos.";
+            msg = "";
+            status_code = 401
         }
     } else {
-        //console.log('msg without attachments')
+        console.log('msg without attachments')
         msg = payload?.body;
+        status_code = 200
     }
 
-    return [msg, attachment]
+    return [msg, attachment, status_code]
 }
 
 const procesarNombreArchivo = (msg) => {
@@ -218,7 +225,7 @@ const findMimeType = (obj) => {
         }
     }
 
-    return null;
+    return "bin";
 };
 
 const findMyData = (obj, keyToLook) => {
@@ -259,7 +266,7 @@ const findCaption = (obj) => {
         }
     }
 
-    return null;
+    return "Archivo adjunto sin mensaje";
 }
 
 const verifyMSG = (texto) => {
