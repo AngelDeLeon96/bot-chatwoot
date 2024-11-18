@@ -105,7 +105,7 @@ const menuPrincipal = addKeyword(EVENTS.ACTION)
     .addAction(async (_, { globalState, state }) => {
         try {
             const id = globalState.get('contact_id');
-            const nombre = state.get('name');
+            const nombre = formatName(state.get('name'));
             const cedula = state.get('cedula');
             if (globalState.get('new') == 1) {
                 const up = updateContact(id, nombre, cedula);
@@ -218,7 +218,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
     .addAnswer([showMSG('bienvenida'), showMSG('correcta_atencion')], async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
-            console.log('user found: ', user_data)
+            //console.log('user found: ', user_data)
             if (user_data != null) {
                 //set las variables con los datos del usuario como su: id y id de conversation
                 await globalState.update({ conversation_id: user_data.conversation_id });
@@ -228,7 +228,6 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
                     await globalState.update({ nombre: user_data.nombre })
 
                 console.log(globalState.get('new'), globalState.get("contact_id"));
-
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
                     if (parseInt(globalState.get('new')) == 1) {
                         return gotoFlow(menuPrincipal);
@@ -285,14 +284,14 @@ const main = async () => {
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
 
                 queue.enqueue(async () => {
-                    let [msg, attachment, status_code] = await saveMediaWB(payload);
-                    console.log("result fn saveMedia", msg, attachment, status_code)
-                    if (parseInt(status_code) == 200) {
-                        const detector = await crearDetectorPalabrasOfensivas();
-                        const result = await detector(msg);
-                        const daata = await recover(payload.from);
-                        const conversation_id = daata.conversation_id;
+                    let [msg, attachment, status_code, extension] = await saveMediaWB(payload);
+                    //console.log("result fn saveMedia", msg, attachment, status_code)
+                    const detector = await crearDetectorPalabrasOfensivas();
+                    const result = await detector(msg);
+                    const daata = await recover(payload.from);
+                    const conversation_id = daata.conversation_id;
 
+                    if (parseInt(status_code) == 200) {
                         if (conversation_id > 0) {
                             //console.log('debounce')
                             msg = result.mensajeEtiquetado;
@@ -304,7 +303,9 @@ const main = async () => {
                             }
                         }
                     } else {
-                        adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido no permitido detectado. Revise su mensaje.' }, {});
+                        adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Atención: Solo se permiten archivos de texto (docx, pdf) e imágenes (jpg, jpeg, png).' }, {});
+
+                        debounceSendMSG(`El usuario intento enviar un archivo con extensión ${extension} y no esta permitido.`, 'incoming', conversation_id)
                     }
                 });
             }
