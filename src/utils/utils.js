@@ -129,23 +129,23 @@ const getMimeWB = (messages) => {
 }
 
 const saveMediaWB = async (payload) => {
-    console.log(JSON.stringify(payload))
+
     const fecha = new Date();
-    const mime_blocked = ['audio', 'video']
-    const ext_blocked = ["gif", "webp", "acc", "wav", "mp3", "mp4"]
+    const mime_blocked = ['audio', 'video'];
+    const ext_blocked = process.env.EXT_BLOCKED;
     let attachment = [];
     let msg = "";
     let status_code = 200;
     const mime = findMyData(payload, "mimetype");
-    let ext = null;
+    const ext = getExtensionFromMime(mime);
 
     //solo texto
     if (payload?.body.includes('_event_') && mime != null) {
         const mimeType = mime.split("/")[0];
-        ext = getExtensionFromMime(mime);
-        console.log('mensaje capturado con el provider: ', mime, ext, mime_blocked.includes(mimeType), ext_blocked.includes(ext));
 
-        if (!mime_blocked.includes(mimeType) && !ext_blocked.includes(ext)) {
+        console.log('mensaje capturado con el provider: ', mime, "ext: ", ext, ext_blocked.includes(ext));
+
+        if (!ext_blocked.includes(ext)) {
             console.log('Procesando archivo docs e images', JSON.stringify(payload.body));
             try {
                 msg = findCaption(payload);
@@ -175,12 +175,12 @@ const saveMediaWB = async (payload) => {
             status_code = 401
         }
     } else {
-        console.log('msg without attachments')
+        //console.log('msg without attachments')
         msg = payload?.body;
         status_code = 200
     }
 
-    return [msg, attachment, status_code]
+    return [msg, attachment, status_code, ext]
 }
 
 const procesarNombreArchivo = (msg) => {
