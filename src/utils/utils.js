@@ -1,10 +1,8 @@
 import { addKeyword } from '@builderbot/bot';
-import fs, { statSync } from 'fs';
+import fs from 'fs';
 import mime from 'mime-types';
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
-import { showMSG } from '../i18n/i18n.js';
 import logger from './logger.js';
-import { sendMessageChatwood } from '../services/chatwood.js';
 
 const ADMIN_NUMBER = process.env.PHONE_NUMBER
 
