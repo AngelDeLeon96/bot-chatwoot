@@ -4,18 +4,26 @@ import { readFile } from 'fs/promises';
 
 import { releaseLock, acquireLock } from '../utils/in-memory-lock.js';
 import logger from '../utils/logger.js';
+import isUrlOnline from './isAlive.js';
 
 const SERVER = process.env.SERVER_DOCKER || "http://localhost";
 const ACCOUNT_ID = process.env.ACCOUNT_ID ?? 2;
 const INBOX_ID = process.env.INBOX_ID ?? 5;
 const API = process.env.API;
 const PORT = process.env.PORT;
-import { getData, setCache, clearCache } from '../utils/cachefn.js';
-import { log } from 'console';
+
 //console.log('server: ', SERVER, PORT);
 // Map para trackear las creaciones en proceso
 const pendingSearches = new Map();
 
+
+const checkServer = async () => {
+    const online = await isUrlOnline(SERVER);
+    const status = online ? 'Online' : "Offline";
+    logger.error(`Error a conectarse al servidor ${SERVER}`, { "Status": status })
+}
+
+checkServer();
 
 const builderURL = (path) => {
     return `${SERVER}/api/v1/accounts/${ACCOUNT_ID}/${path}`
@@ -137,7 +145,7 @@ const createContact = async (phone = "") => {
         return contact_data;
     }
     catch (err) {
-        logger.err("Error al crear el contacto", { "err": err })
+        logger.error("Error al crear el contacto", { "err": err })
 
     }
 }
@@ -173,7 +181,8 @@ const updateContact = async (id = 0, nombre = "", cedula = "") => {
         return response.status;
     }
     catch (err) {
-        logger.err("Error al actualizar el contacto", { "error": err });
+        console.log(err)
+        logger.error("Error al actualizar el contacto", { "error": err });
     }
 
 }
@@ -220,8 +229,8 @@ const searchUser = async (user = "") => {
 
             return data_user;
         } catch (err) {
-            console.log(err)
-            logger.err("Se produjo un error al buscar", { "error": err })
+            //console.log(err)
+            logger.error("Se produjo un error al buscar", { "error": err })
             catch_error(err);
         } finally {
             // Limpiar el Map de búsquedas pendientes
@@ -271,7 +280,7 @@ const recoverConversation = async (id = 0, user = "") => {
         return conversation_id
     } catch (err) {
         catch_error(err)
-        //console.error('err', err);
+        console.log('err', err);
     }
 };
 
