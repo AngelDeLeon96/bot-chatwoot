@@ -9,6 +9,7 @@ import { flujoFinal, reset, start, stop } from './utils/timer.js'
 import { freeFlow } from './flows/agents.js'
 import { primera_vez, prima_menu, attach_forms, attach_forms_cedula, attach_forms_continuidad } from './flows/prima.js';
 const PORT = process.env.PORT_WB ?? 1000
+
 import Queue from 'queue-promise';
 import { catch_error, esHorarioLaboral, formatName, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
@@ -24,7 +25,7 @@ const queue = new Queue({
 });
 i18n.init();
 
-console.log("SERVER DOCKER: ", process.env.SERVER_DOCKER)
+console.log("🚀 CHATWOOT IS RUNNING IN: ", process.env.SERVER_DOCKER)
 
 const flowtest = addKeyword('testing2552')
     .addAction(async (ctx, { flowDynamic }) => {
@@ -108,12 +109,12 @@ const menuPrincipal = addKeyword(EVENTS.ACTION)
             const nombre = formatName(state.get('name'));
             const cedula = state.get('cedula');
             if (globalState.get('new') == 1) {
-                const up = updateContact(id, nombre, cedula);
-                console.log(up)
+                updateContact(id, nombre, cedula);
             }
         }
         catch (err) {
-            console.log(err)
+            logger.error("error", { "err": err })
+
         }
     })
     .addAction({ delay: 500 }, async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
@@ -155,8 +156,8 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
         try {
             logger.info("se produjo una excepcion en el flujo welcome y se redirijio al flujo userNotRegistered.")
             //console.log('Unregistered')
-            const numero = ctx.from
-            var FORMULARIO = process.env.FORM_URL
+            //const numero = ctx.from
+            //var FORMULARIO = process.env.FORM_URL
             var MSG = "Se produjo una excepción no esperada, intente más tarde."
             await flowDynamic(MSG)
             return endFlow()
@@ -227,7 +228,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
                 if (parseInt(globalState.get('new')) == 0)
                     await globalState.update({ nombre: user_data.nombre })
 
-                console.log(globalState.get('new'), globalState.get("contact_id"));
+                //globalState.get('new'), globalState.get("contact_id"));
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
                     if (parseInt(globalState.get('new')) == 1) {
                         return gotoFlow(menuPrincipal);
