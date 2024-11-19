@@ -64,6 +64,7 @@ const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
             case 4:
                 return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
             default:
+                reset(ctx, gotoFlow);
                 return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
         }
     })
@@ -169,7 +170,7 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
     });
 
 const testWelcomeFlow = addKeyword(EVENTS.WELCOME)
-    .addAction(async (ctx, { endFlow, flowDynamic }) => {
+    .addAction(async (ctx, { flowDynamic }) => {
         const clientId = ctx.from; //El numero de telefono funciona como id unico.
 
         // Si el cliente no tiene un buffer aún, crear uno
@@ -197,7 +198,7 @@ const testWelcomeFlow = addKeyword(EVENTS.WELCOME)
 
             await flowDynamic(messagesToProcess);
 
-            console.log(response);
+            //console.log(response);
 
             // Limpiar el temporizador del cliente
             clientBuffers.delete(clientId);
