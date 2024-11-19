@@ -7,7 +7,7 @@ import logger from './logger.js';
 const ADMIN_NUMBER = process.env.PHONE_NUMBER
 
 const catch_error = (error) => {
-    console.log(error);
+
     if (error.response) {
         // El servidor respondió con un código de estado fuera del rango 2xx
         if (error.response.status === 404) {
