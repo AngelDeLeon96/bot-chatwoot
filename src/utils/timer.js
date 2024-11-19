@@ -1,12 +1,13 @@
 import { addKeyword, EVENTS } from '@builderbot/bot'
 import { showMSG } from '../i18n/i18n.js';
-import { flowAddTime, flowMsgFinal } from '../flows/agents.js';
+import { flowMsgFinal } from '../flows/agents.js';
+import logger from './logger.js';
 // Objeto para almacenar los temporizadores para cada usuario
 const timers = {};
 const remainingTimes = {};
 const TIMER = process.env.TIMER ?? 100000
 const TIMER_BOT = process.env.TIMER_BOT ?? 100000
-//console.log(`timer: ${TIMER / 60000} min, timer bot: ${TIMER_BOT / 60000}min`);
+console.log(`timer: ${TIMER / 60000} min, timer bot: ${TIMER_BOT / 60000}min`);
 
 //flujo final por inactividad
 const flujoFinal = addKeyword(EVENTS.ACTION)
@@ -79,18 +80,22 @@ const pauseBot = (ctx) => {
 
 // Función para iniciar el temporizador de inactividad para un usuario
 const start = (ctx, gotoFlow, ms = TIMER) => {
-    //console.log(gotoFlow, ms);
+    logger.info("starting timer...");
+    if (timers[ctx.from]) {
+        clearTimeout(timers[ctx.from]);
+    }
     timers[ctx.from] = setTimeout(() => {
-        //console.log(`User timeout: ${ctx.from}`);
+        logger.info(`stopped timer to: ${ctx.from}`);
         return gotoFlow(flujoFinal);
     }, ms);
+
 }
 
 // Función para reiniciar el temporizador de inactividad para un usuario
 const reset = (ctx, gotoFlow, ms = TIMER) => {
     stop(ctx);
     if (timers[ctx.from]) {
-        //console.log(`reset countdown for the user: ${ctx.from}`);
+        logger.info(`reset countdown for the user: ${ctx.from}`);
         clearTimeout(timers[ctx.from]);
     }
     start(ctx, gotoFlow, ms);
@@ -99,8 +104,9 @@ const reset = (ctx, gotoFlow, ms = TIMER) => {
 // Función para detener el temporizador de inactividad para un usuario
 const stop = (ctx) => {
     if (timers[ctx.from]) {
-        //console.log(`stopped countdown for the user: ${ctx.from}`);
+        logger.info(`💡fn stop - stopped countdown for the user: ${ctx.from}`);
         clearTimeout(timers[ctx.from]);
+
     }
 }
 //
