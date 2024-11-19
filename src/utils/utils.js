@@ -129,7 +129,7 @@ const getMimeWB = (messages) => {
 const saveMediaWB = async (payload) => {
 
     const fecha = new Date();
-    const mime_blocked = ['audio', 'video'];
+    //const mime_blocked = ['audio', 'video'];
     const ext_blocked = process.env.EXT_BLOCKED;
     let attachment = [];
     let msg = "";
@@ -139,12 +139,10 @@ const saveMediaWB = async (payload) => {
 
     //solo texto
     if (payload?.body.includes('_event_') && mime != null) {
-        const mimeType = mime.split("/")[0];
-
-        console.log('mensaje capturado con el provider: ', mime, "ext: ", ext, ext_blocked.includes(ext));
+        //const mimeType = mime.split("/")[0];
+        //console.log('mensaje capturado con el provider: ', mime, "ext: ", ext, ext_blocked.includes(ext));
 
         if (!ext_blocked.includes(ext)) {
-            console.log('Procesando archivo docs e images', JSON.stringify(payload.body));
             try {
                 msg = findCaption(payload);
                 //console.log('caption', caption, msg)
@@ -160,6 +158,7 @@ const saveMediaWB = async (payload) => {
                 //console.log('Archivo guardado correctamente en:', pathFile, saved);
                 attachment.push(pathFile);
                 status_code = 201;
+                logger.info("Procesando archivo docs e images");
             } catch (error) {
                 logger.error('Error al procesar el archivo:', { 'error': error })
                 //console.error('Error al procesar el archivo:', error);
@@ -201,10 +200,10 @@ const procesarNombreArchivo = (msg) => {
 };
 
 const extractMimeWb = (payload) => {
-    const mime = findMimeType(payload);
-    let extracted_mime = mime ? getExtensionFromMime(mime) : null;
+    const mime = findMyData(payload, "mimetype");
+    let ext = mime ? getExtensionFromMime(mime) : null;
     //console.log('mime type: ', mime, extracted_mime);
-    return extracted_mime;
+    return ext;
 };
 
 const findMimeType = (obj) => {
