@@ -20,7 +20,10 @@ const pendingSearches = new Map();
 const checkServer = async () => {
     const online = await isUrlOnline(SERVER);
     const status = online ? 'Online' : "Offline";
-    logger.error(`Error a conectarse al servidor ${SERVER}`, { "Status": status })
+    if (!online) {
+        logger.error(`Error a conectarse al servidor ${SERVER}`, { "Status": status })
+    }
+
 }
 
 checkServer();
@@ -151,8 +154,9 @@ const createContact = async (phone = "") => {
 }
 
 const updateContact = async (id = 0, nombre = "", cedula = "") => {
-    const contact_data = null
+
     try {
+        //const contact_data = null
         const myHeaders = new Headers();
         const url = builderURL(`contacts/${id}`);
 
@@ -244,7 +248,7 @@ const searchUser = async (user = "") => {
     return searchPromise;
 };
 
-const recoverConversation = async (id = 0, user = "") => {
+const recoverConversation = async (id = 0) => {
     try {
         /*const cachedData = cache.get(id);
         if (cachedData) {
@@ -288,7 +292,7 @@ const recoverConversation = async (id = 0, user = "") => {
 
 const recover = async (user = {}) => {
     try {
-        const user_info = {};
+        //const user_info = {};
         const data_user = await searchUser(user);
 
         if (data_user.user_id > 0) {
