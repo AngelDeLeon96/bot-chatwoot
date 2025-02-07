@@ -1,4 +1,4 @@
-SERVER_DOCKER=https://chatwoot-bot.ddns.net
+SERVER_DOCKER=
 API=fmoRKWeh931ZiZSKAjAkjCa4
 PORT_WB=5555
 PORT_BOT=3030
@@ -8,12 +8,12 @@ INBOX_ID=1
 DEBOUNCE_TIME=30000
 TIMER=600000
 TIMER_BOT=6000000
-ADMIN_NUMBER=+50769469507
+ADMIN_NUMBER=
 # debe ser ssl
 BOT_URL=
 # debe ser igual al server, deberia ser un dominio
-FRONTEND_URL=https://chatwoot-bot.ddns.net/
-FORM_URL=https://forms.office.com/r/5qgHH1dLin
+FRONTEND_URL=
+FORM_URL=
 H_INICIO = 7
 H_SALIDA = 16
 S_LABORAL_INICIO = 1
