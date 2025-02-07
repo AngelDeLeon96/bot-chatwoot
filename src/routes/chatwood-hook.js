@@ -63,7 +63,7 @@ const chatWoodHook = async (req, res) => {
             }
             //envia los docs al whatsapp
             if (file) {
-                console.log(file.data_url)
+                //console.log(file.data_url)
                 //const fileURL = file.data_url.replace('http://127.0.0.1:3000/', process.env.FRONTEND_URL)
                 const fileURL = file.data_url
                 await providerWS.sendMedia(`${phone}@c.us`, fileURL, content)

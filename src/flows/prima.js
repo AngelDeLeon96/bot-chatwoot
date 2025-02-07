@@ -11,11 +11,11 @@ const prima_menu = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer([showMSG('menu'), showMSG('solicitar_consulta'), showMSG('prima_opcion_1'), showMSG('prima_opcion_2'), showMSG('prima_opcion_3'), showMSG('prima_opcion_4'), showMSG('prima_opcion_5'), `6. ${showMSG('exit')}`], { capture: true }, async (ctx, { state, gotoFlow }) => {
         reset(ctx, gotoFlow);
-        await state.update({ 'prima_menu_opc': ctx.body })
+        await state.update({ 'prima_menu_opc': ctx.body });
     })
     .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
         sendMessageChatwood(`${showMSG('selected')} ${state.get('prima_menu_opc')}`, 'incoming', globalState.get('conversation_id'));
-
+        stop(ctx);
         switch (parseInt(state.get('prima_menu_opc'))) {
             case 1:
                 return gotoFlow(primera_vez);
@@ -48,23 +48,26 @@ const primera_vez = addKeyword(EVENTS.ACTION)
 const attach_forms = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_2')}`)
-    .addAnswer(`${showMSG('adjuntar_form')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
-        reset(ctx, gotoFlow)
-        //console.log('body: ', JSON.stringify(ctx))
+    .addAnswer(`${showMSG('adjuntar_form')}\n${showMSG('exit_opt')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
+        reset(ctx, gotoFlow);
+        let cancelar = ctx.body;
+        if (cancelar.toLowerCase() === "cancelar" || cancelar.toLowerCase() === "salir") {
+            stop(ctx)
+            return gotoFlow(prima_menu);
+        }
         let extractedMime = extractMimeWb(ctx)
-        const formats = ['pdf', 'docx']
+        const formats = process.env.ALLOWED_DOCS
         if (formats.includes(extractedMime)) {
             let [msg, attachment] = await saveMediaWB(ctx)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
         else {
-            return fallBack(`${showMSG('no_permitida')} Solo se permiten los archivos en formato: ${formats}. ${showMSG('try_again')}`);
+            return fallBack(`Solo se permiten los archivos en formato: ${formats}. ${showMSG('try_again')}`);
         }
     })
-    .addAnswer(showMSG('formulario_captado'))
-    .addAction(async (ctx, { gotoFlow }) => {
+    .addAction(async (ctx, { gotoFlow, flowDynamic }) => {
         stop(ctx)
-        //return endFlow(`${showMSG('formulario_captado')}`)
+        await flowDynamic(showMSG('formulario_captado'))
         return gotoFlow(prima_menu)
     })
 
@@ -72,10 +75,15 @@ const attach_forms = addKeyword(EVENTS.ACTION)
 const attach_forms_cedula = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_3')}`)
-    .addAnswer(`${showMSG('adjuntar_cedula')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
-        reset(ctx, gotoFlow)
-        let extractedMime = extractMimeWb(ctx)
-        const formats = ['pdf', 'docx', 'png', 'jpg', 'jpeg', 'gif']
+    .addAnswer(`${showMSG('adjuntar_cedula')}\n${showMSG('exit_opt')}`, { capture: true }, async (ctx, { fallBack, globalState, gotoFlow }) => {
+        reset(ctx, gotoFlow);
+        let cancelar = ctx.body;
+        if (cancelar.toLowerCase() === "cancelar" || cancelar.toLowerCase() === "salir") {
+            stop(ctx);
+            return gotoFlow(prima_menu);
+        }
+        let extractedMime = extractMimeWb(ctx);
+        const formats = process.env.ALLOWED_EXT_CEDULA;
         if (formats.includes(extractedMime)) {
             let [msg, attachment] = await saveMediaWB(ctx)
             sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
@@ -84,33 +92,36 @@ const attach_forms_cedula = addKeyword(EVENTS.ACTION)
             return fallBack(`${showMSG('no_permitida')} Solo se permiten los archivos en formato: ${formats}. ${showMSG('try_again')}`);
         }
     })
-    .addAnswer(`${showMSG('cedula_captada')}`)
-    .addAction(async (ctx, { gotoFlow }) => {
-        stop(ctx)
-        return gotoFlow(prima_menu)
+    .addAction(async (ctx, { gotoFlow, flowDynamic }) => {
+        stop(ctx);
+        await flowDynamic(showMSG('cedula_captada'));
+        return gotoFlow(prima_menu);
     })
 
 const attach_forms_continuidad = addKeyword('attach2')
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
     .addAnswer(`${showMSG('selected')} ${showMSG('prima_opcion_4')}`)
-    .addAnswer(`${showMSG('adjuntar_continuidad')}`, { capture: true }, async (ctx, { globalState, fallBack, gotoFlow }) => {
-        reset(ctx, gotoFlow)
-        let extractedMime = extractMimeWb(ctx)
-        //console.log('ext detected: ', extractedMime)
-        let formats = ['pdf', 'docx']
+    .addAnswer(`${showMSG('adjuntar_continuidad')}\n${showMSG('exit_opt')}`, { capture: true }, async (ctx, { globalState, fallBack, gotoFlow }) => {
+        reset(ctx, gotoFlow);
+        let cancelar = ctx.body;
+        if (cancelar.toLowerCase() === "cancelar" || cancelar.toLowerCase() === "salir") {
+            stop(ctx);
+            return gotoFlow(prima_menu);
+        }
+        let extractedMime = extractMimeWb(ctx);
+        let formats = process.env.ALLOWED_DOCS;
         if (formats.includes(extractedMime)) {
-            let [msg, attachment] = await saveMediaWB(ctx)
+            let [msg, attachment] = await saveMediaWB(ctx);
             await sendMessageChatwood(msg, 'incoming', globalState.get('conversation_id'), attachment);
         }
         else {
             return fallBack(`${showMSG('no_permitida')} Solo se permiten los archivos en formato: ${formats}. ${showMSG('try_again')}`);
         }
     })
-    .addAnswer(`${showMSG('formulario_captado')}`)
-    .addAction(async (ctx, { gotoFlow }) => {
-        stop(ctx)
-        //return endFlow(`${showMSG('formulario_captado')}`)
-        return gotoFlow(prima_menu)
+    .addAction(async (ctx, { gotoFlow, flowDynamic }) => {
+        stop(ctx);
+        await flowDynamic(showMSG('formulario_captado'));
+        return gotoFlow(prima_menu);
     })
 
 

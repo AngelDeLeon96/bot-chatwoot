@@ -44,6 +44,7 @@
 	"prima_opcion_4": "4. (Opcional) Adjuntar de certificaciones de continuidad de otras instituciones.",
 	"prima_opcion_5": "5. Consulta del trámite en curso (hablar con un agente).",
 	"try_again": "Intente nuevamente.",
+	"exit_opt":"Para cancelar, escriba salir o cancelar",
 	"correcta_atencion": "Para brindarle una atención adecuada, por favor proporcione los datos solicitados.",
 	"user_registered": "¿En qué puedo ayudarte"
 }

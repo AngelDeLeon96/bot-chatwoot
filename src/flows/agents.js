@@ -2,12 +2,8 @@
 import { addKeyword, EVENTS } from '@builderbot/bot';
 import { reset, start, startBot, stop } from '../utils/timer.js';
 import { showMSG } from '../i18n/i18n.js';
-import Queue from 'queue-promise';
 import logger from '../utils/logger.js';
-const queue = new Queue({
-    concurrent: 1,
-    interval: 500
-});
+
 
 //good bye
 const flowGoodBye = addKeyword(EVENTS.ACTION)
@@ -17,13 +13,13 @@ const flowGoodBye = addKeyword(EVENTS.ACTION)
 //
 const flowAddTime = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer([showMSG('aumentar_tiempo'), showMSG('opciones')], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
+    .addAnswer([showMSG('aumentar_tiempo'), showMSG('opciones')], { capture: true }, async (ctx, { state, gotoFlow }) => {
         reset(ctx, gotoFlow);
         //sendMessageChatwood([showMSG('aumentar_tiempo'), showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
         await state.update({ response: ctx.body });
         //console.log(state.get('response'))
     })
-    .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack, globalState }) => {
+    .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack }) => {
         stop(ctx);
         //sendMessageChatwood(state.get('response'), 'incoming', globalState.get('conversation_id'));
         //switch
@@ -42,12 +38,12 @@ const flowAddTime = addKeyword(EVENTS.ACTION)
 //hablar con un agente
 const flowTalkAgent = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow }) => start(ctx, gotoFlow))
-    .addAnswer([showMSG('desea_comunicarse'), 'Escriba:', showMSG('opcion_1'), showMSG('opcion_2')], { capture: true }, async (ctx, { state, gotoFlow, globalState }) => {
+    .addAnswer([showMSG('desea_comunicarse'), 'Escriba:', showMSG('opcion_1'), showMSG('opcion_2')], { capture: true }, async (ctx, { state, gotoFlow }) => {
         reset(ctx, gotoFlow);
         //sendMessageChatwood([showMSG("desea_comunicarse"), showMSG('opciones')], 'outgoing', globalState.get('conversation_id'));
         await state.update({ check: ctx.body });
     })
-    .addAction(async (ctx, { globalState, state, gotoFlow, endFlow, fallBack }) => {
+    .addAction(async (ctx, { state, gotoFlow, endFlow, fallBack }) => {
         stop(ctx)
         const MSF = showMSG('opciones');
         //sendMessageChatwood(`${showMSG('usuario_respondio')} ${state.get('check')}`, 'incoming', globalState.get('conversation_id'));
@@ -68,7 +64,7 @@ const flowTalkAgent = addKeyword(EVENTS.ACTION)
 //flujo libre
 const freeFlow = addKeyword(EVENTS.ACTION)
     .addAction(async (ctx, { gotoFlow, endFlow, blacklist }) => startBot(ctx, gotoFlow, endFlow, blacklist))
-    .addAnswer(`${showMSG('connected')} ${process.env.TIMER_BOT / 60000} minutos.`, async (ctx, { globalState, blacklist }) => {
+    .addAnswer(`${showMSG('connected')} ${process.env.TIMER_BOT / 60000} minutos.`, async (ctx, { blacklist }) => {
         let number = ctx.from.replace("+", "")
         let check_num = blacklist.checkIf(number)
         //console.log(number, check)
@@ -110,8 +106,8 @@ const documentFlow2 = addKeyword(EVENTS.DOCUMENT)
 //voice notes
 const voiceNoteFlow = addKeyword(EVENTS.VOICE_NOTE)
     .addAnswer(showMSG('gracias'))
-    .addAction(async (_, { endFlow, gotoFlow }) => {
-        return gotoFlow(welcomeFlow)
+    .addAction(async (_, { endFlow }) => {
+        return endFlow()
     })
 
 export { flowAddTime, flowTalkAgent, freeFlow, flowGoodBye, flowDefault, flowMsgFinal, documentFlow2, mediaFlow, voiceNoteFlow };

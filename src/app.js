@@ -9,6 +9,7 @@ import { flujoFinal, reset, start, stop } from './utils/timer.js'
 import { freeFlow } from './flows/agents.js'
 import { primera_vez, prima_menu, attach_forms, attach_forms_cedula, attach_forms_continuidad } from './flows/prima.js';
 const PORT = process.env.PORT_WB ?? 1000
+
 import Queue from 'queue-promise';
 import { catch_error, esHorarioLaboral, formatName, getMimeWB, saveMediaWB, verifyMSG } from './utils/utils.js';
 import { showMSG, i18n } from './i18n/i18n.js';
@@ -24,7 +25,7 @@ const queue = new Queue({
 });
 i18n.init();
 
-console.log("SERVER DOCKER: ", process.env.SERVER_DOCKER)
+console.log("🚀 CHATWOOT IS RUNNING IN: ", process.env.SERVER_DOCKER)
 
 const flowtest = addKeyword('testing2552')
     .addAction(async (ctx, { flowDynamic }) => {
@@ -39,29 +40,32 @@ const menuPrincipalwithoutRegister = addKeyword(EVENTS.ACTION)
         await flowDynamic(`${showMSG('user_registered')} ${globalState.get('nombre')}?`);
         await flowDynamic([{ delay: 200, body: `${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}` }]);
     })
-    .addAction({ capture: true }, async (ctx, { flowDynamic, fallBack, state, gotoFlow, endFlow }) => {
+    .addAction({ capture: true }, async (ctx, { fallBack, state, gotoFlow }) => {
         reset(ctx, gotoFlow);
         await state.update({ opc_consulta: ctx.body });
         let typeMSG = getMimeWB(ctx.message)
         if (typeMSG !== "senderKeyDistributionMessage") {
             return fallBack(`${showMSG('solicitar_consulta')}`);
         }
-        else {
-            switch (parseInt(state.get('opc_consulta'))) {
-                case 1:
-                    //menu de prima de antiguedad
-                    return gotoFlow(prima_menu);
-                case 2:
-                    //consultar vacaciones (free mode)
-                    return gotoFlow(freeFlow);
-                case 3:
-                    //consultar tramite (free mode)
-                    return gotoFlow(freeFlow)
-                case 4:
-                    return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
-                default:
-                    return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
-            }
+    })
+    .addAction(async (ctx, { fallBack, state, gotoFlow, endFlow, globalState }) => {
+        stop(ctx);
+        sendMessageChatwood(`${showMSG('selected')} ${state.get('opc_consulta')}`, 'incoming', globalState.get('conversation_id'));
+        switch (parseInt(state.get('opc_consulta'))) {
+            case 1:
+                //menu de prima de antiguedad
+                return gotoFlow(prima_menu);
+            case 2:
+                //consultar vacaciones (free mode)
+                return gotoFlow(freeFlow);
+            case 3:
+                //consultar tramite (free mode)
+                return gotoFlow(freeFlow)
+            case 4:
+                return endFlow(`${showMSG('gracias')}\n${showMSG('reiniciar_bot')}`);
+            default:
+                reset(ctx, gotoFlow);
+                return fallBack(`${showMSG('no_permitida')}\n${showMSG('solicitar_consulta')}\n${showMSG('prima')}\n${showMSG('vacaciones')}\n${showMSG('tramite_status')}\n${showMSG('salir')}`);
         }
     })
 
@@ -100,18 +104,18 @@ const menuPrincipal = addKeyword(EVENTS.ACTION)
             return fallBack(`${showMSG('solicitar_consulta')}`);
         }
     })
-    .addAction(async (ctx, { globalState, state }) => {
+    .addAction(async (_, { globalState, state }) => {
         try {
             const id = globalState.get('contact_id');
-            const nombre = state.get('name');
+            const nombre = formatName(state.get('name'));
             const cedula = state.get('cedula');
             if (globalState.get('new') == 1) {
-                const up = updateContact(id, nombre, cedula);
-                console.log(up)
+                updateContact(id, nombre, cedula);
             }
         }
         catch (err) {
-            console.log(err)
+            logger.error("error", { "err": err })
+
         }
     })
     .addAction({ delay: 500 }, async (ctx, { fallBack, gotoFlow, endFlow, globalState, state }) => {
@@ -153,8 +157,8 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
         try {
             logger.info("se produjo una excepcion en el flujo welcome y se redirijio al flujo userNotRegistered.")
             //console.log('Unregistered')
-            const numero = ctx.from
-            var FORMULARIO = process.env.FORM_URL
+            //const numero = ctx.from
+            //var FORMULARIO = process.env.FORM_URL
             var MSG = "Se produjo una excepción no esperada, intente más tarde."
             await flowDynamic(MSG)
             return endFlow()
@@ -166,7 +170,7 @@ const userNotRegistered = addKeyword(EVENTS.ACTION)
     });
 
 const testWelcomeFlow = addKeyword(EVENTS.WELCOME)
-    .addAction(async (ctx, { endFlow, flowDynamic }) => {
+    .addAction(async (ctx, { flowDynamic }) => {
         const clientId = ctx.from; //El numero de telefono funciona como id unico.
 
         // Si el cliente no tiene un buffer aún, crear uno
@@ -194,7 +198,7 @@ const testWelcomeFlow = addKeyword(EVENTS.WELCOME)
 
             await flowDynamic(messagesToProcess);
 
-            console.log(response);
+            //console.log(response);
 
             // Limpiar el temporizador del cliente
             clientBuffers.delete(clientId);
@@ -216,7 +220,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
     .addAnswer([showMSG('bienvenida'), showMSG('correcta_atencion')], async (ctx, { globalState, gotoFlow }) => {
         try {
             const user_data = await recover(ctx.from);
-            console.log('user found: ', user_data)
+            //console.log('user found: ', user_data)
             if (user_data != null) {
                 //set las variables con los datos del usuario como su: id y id de conversation
                 await globalState.update({ conversation_id: user_data.conversation_id });
@@ -225,8 +229,7 @@ const welcomeFlow = addKeyword([EVENTS.WELCOME, EVENTS.DOCUMENT, EVENTS.VOICE_NO
                 if (parseInt(globalState.get('new')) == 0)
                     await globalState.update({ nombre: user_data.nombre })
 
-                console.log(globalState.get('new'), globalState.get("contact_id"));
-
+                //globalState.get('new'), globalState.get("contact_id"));
                 if (globalState.get('contact_id') > 0 && globalState.get('conversation_id') > 0) {
                     if (parseInt(globalState.get('new')) == 1) {
                         return gotoFlow(menuPrincipal);
@@ -281,30 +284,36 @@ const main = async () => {
             //console.log(`payload: `, JSON.stringify(payload), '\n');
             let debounceSendMSG = debounce(sendMessageChatwood, 100);
             if (bot.dynamicBlacklist.checkIf(payload.from)) {
-                //console.log(JSON.stringify('free mode'))
+
                 queue.enqueue(async () => {
-                    let [msg, attachment] = await saveMediaWB(payload);
+                    let [msg, attachment, status_code, extension] = await saveMediaWB(payload);
+                    //console.log("result fn saveMedia", msg, attachment, status_code)
                     const detector = await crearDetectorPalabrasOfensivas();
                     const result = await detector(msg);
                     const daata = await recover(payload.from);
                     const conversation_id = daata.conversation_id;
 
-                    if (conversation_id > 0) {
-                        //console.log('debounce')
-                        msg = result.mensajeEtiquetado;
-                        debounceSendMSG(msg, 'incoming', conversation_id, attachment);
-
-                        if (result.puntajeTotal >= 2) {
-                            logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from });
-                            adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {});
+                    if (parseInt(status_code) == 200) {
+                        if (conversation_id > 0) {
+                            //console.log('debounce')
+                            msg = result.mensajeEtiquetado;
+                            debounceSendMSG(msg, 'incoming', conversation_id, attachment);
+                            if (result.puntajeTotal >= 2) {
+                                logger.warn('msg inapropiado:', { text: 'Posible contenido inapropiado detectado. Revise su mensaje.', user: payload.from });
+                                //send msg to whatsapp user
+                                adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Posible contenido inapropiado detectado. Revise su mensaje.' }, {});
+                            }
                         }
+                    } else {
+                        adapterProvider.vendor.sendMessage(payload.key.remoteJid, { text: 'Atención: Solo se permiten archivos de texto (docx, pdf) e imágenes (jpg, jpeg, png).' }, {});
+
+                        debounceSendMSG(`El usuario intento enviar un archivo con extensión ${extension} y no esta permitido.`, 'incoming', conversation_id)
                     }
                 });
             }
         }
         catch (err) {
-            catch_error(err);
-            console.error('ERROR', err)
+            logger.error("error al desactivar el bot", { "err": err })
         }
     });
 
@@ -322,8 +331,8 @@ const main = async () => {
             }
         }
         catch (err) {
-            catch_error(err);
             //console.error('ERROR', err)
+            logger.error("error al reenviar los msg del bot.", { "err": err })
         }
     });
 }
